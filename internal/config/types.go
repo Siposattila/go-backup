@@ -1,32 +1,36 @@
 package config
 
 type MasterConfig struct {
-	Nodes                         map[string]NodeConfig
-	BackupPath                    string
-	WhenToBackup                  string
-	ExcludeExtensions             []string
-	ExcludeFiles                  []string
-	StorageAlertTresholdInPercent int
-	EmailAlert                    bool
-	NotificationEmailReceiver     string
-	NotificationEmailSender       string
-	NotificationEmailAuth         NotificationEmailSenderAuth
-	DiscordAlert                  bool
-	NotificationDiscordAuth       NotificationDiscordSenderAuth
+	Nodes                         []string `json:"nodes"`
+	BackupPath                    string   `json:"backupPath"`
+	WhenToBackup                  string   `json:"whenToBackup"`
+	ExcludeExtensions             []string `json:"excludeExtensions"`
+	ExcludeFiles                  []string `json:"excludeFiles"`
+	StorageAlertTresholdInPercent int      `json:"storageAlertTresholdInPercent"`
+	EmailAlert                    bool     `json:"emailAlert"`
+	DiscordAlert                  bool     `json:"discordAlert"`
+	Debug                         bool     `json:"-"`
 }
 
 type NodeConfig struct {
-	NodeId string
+	NodeId            string   `json:"nodeId"`
+	WhenToBackup      string   `json:"whenToBackup"`
+	WhatToBackup      []string `json:"whatToBackup"`
+	ExcludeExtensions []string `json:"excludeExtensions"`
+	ExcludeFiles      []string `json:"excludeFiles"`
+	Debug             bool     `json:"-"`
 }
 
 type NotificationEmailSenderAuth struct {
-	User     string
-	Password string
-	Host     string
-	Port     int
+	EmailReceiver string `json:"emailReceiver"`
+	EmailSender   string `json:"emailSender"`
+	User          string `json:"user"`
+	Password      string `json:"password"`
+	Host          string `json:"host"`
+	Port          int    `json:"port"`
 }
 
 type NotificationDiscordSenderAuth struct {
-	WebHookId    string
-	WebHookToken string
+	WebHookId    string `json:"webHookId"`
+	WebHookToken string `json:"webHookToken"`
 }
