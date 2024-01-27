@@ -33,10 +33,18 @@ func handleStream(clientStream webtransport.Stream) {
 			writeToStream(clientStream, makeResponse("Config", string(serializer.Deserialize(config.Node))))
             console.Normal("Config sent to " + incomingRequest.NodeId)
 			break
+        default:
+            sendHello(clientStream)
 		}
 	}
 
 	return
+}
+
+func sendHello(stream webtransport.Stream) {
+    writeToStream(stream, makeResponse("KeepAlive", "HELLO"))
+
+    return
 }
 
 func authClient(stream webtransport.Stream, nodeId string, requestToken string) error {

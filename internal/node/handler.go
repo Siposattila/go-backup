@@ -9,7 +9,6 @@ import (
 
 func handleStream() {
 	console.Normal("Trying to request for config from master...")
-    console.Debug(config.Node.Token)
 	writeToStream(makeRequest("Config", "PLEASE"))
 	for {
 		var response request.MasterResponse
@@ -19,6 +18,7 @@ func handleStream() {
 		case "Config": 
 			serializer.Serialize([]byte(response.Data), &config.Node)
 			console.Success("Got config from master!")
+        	writeToStream(makeRequest("KeepAlive", "OK"))
 			break
         case "NewNode":
             console.Warning("This node is now registered at the master! The token was generated for this node at the master.")
@@ -26,6 +26,9 @@ func handleStream() {
 		case "NotValid":
 			console.Fatal("Wrong credentials!")
 			break
+        case "KeepAlive":
+        	writeToStream(makeRequest("KeepAlive", "OK"))
+            break
 		}
 	}
 }
