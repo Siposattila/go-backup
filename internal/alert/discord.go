@@ -20,12 +20,16 @@ func InitDiscordClient() {
 	config.LoadConfig("discord")
 	console.Normal("Discord client version: (disgo)" + disgo.Version)
 	discordClient = webhook.New(snowflake.MustParse(config.Discord.WebHookId), config.Discord.WebHookToken)
+    console.Success("Discord client started! Ready to send alerts!")
 
 	return
 }
 
 func CloseDiscordClient() {
-	discordClient.Close(context.Background())
+    if discordClient != nil {
+        discordClient.Close(context.Background())
+        console.Normal("Shutting down discord client...")
+    }
 
 	return
 }

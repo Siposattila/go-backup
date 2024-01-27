@@ -1,15 +1,18 @@
 package config
 
 type MasterConfig struct {
-	Nodes                         []string `json:"nodes"`
-	BackupPath                    string   `json:"backupPath"`
-	WhenToBackup                  string   `json:"whenToBackup"`
-	ExcludeExtensions             []string `json:"excludeExtensions"`
-	ExcludeFiles                  []string `json:"excludeFiles"`
-	StorageAlertTresholdInPercent int      `json:"storageAlertTresholdInPercent"`
-	EmailAlert                    bool     `json:"emailAlert"`
-	DiscordAlert                  bool     `json:"discordAlert"`
-	Debug                         bool     `json:"-"`
+	Nodes                         map[string]string `json:"nodes"`
+	Port                          string            `json:"port"`
+	Domain                        string            `json:"domain"`
+	BackupPath                    string            `json:"backupPath"`
+	WhenToBackup                  string            `json:"whenToBackup"`
+	ExcludeExtensions             []string          `json:"excludeExtensions"`
+	ExcludeFiles                  []string          `json:"excludeFiles"`
+	StorageAlertTresholdInPercent int               `json:"storageAlertTresholdInPercent"`
+	EmailAlert                    bool              `json:"emailAlert"`
+	DiscordAlert                  bool              `json:"discordAlert"`
+	RegisterNodeIfKnown           bool              `json:"registerNodeIfNotKnown"`
+	Debug                         bool              `json:"-"`
 }
 
 type NodeConfig struct {
@@ -18,6 +21,7 @@ type NodeConfig struct {
 	WhatToBackup      []string `json:"whatToBackup"`
 	ExcludeExtensions []string `json:"excludeExtensions"`
 	ExcludeFiles      []string `json:"excludeFiles"`
+	Token             string   `json:"-"`
 	Debug             bool     `json:"-"`
 }
 

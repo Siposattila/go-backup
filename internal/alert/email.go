@@ -13,12 +13,16 @@ func InitEmailClient() {
 	config.LoadConfig("email")
 	console.Normal("Email client version: gomail")
 	emailClient = gomail.NewDialer(config.Email.Host, config.Email.Port, config.Email.User, config.Email.Password)
+	console.Success("Email client started! Ready to send alerts!")
 
 	return
 }
 
 func CloseEmailClient() {
-	emailClient = nil
+	if emailClient != nil {
+		emailClient = nil
+	}
+	console.Normal("Getting rid of the email client...")
 
 	return
 }
