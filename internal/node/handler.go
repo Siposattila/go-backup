@@ -1,6 +1,7 @@
 package node
 
 import (
+	"github.com/Siposattila/gobkup/internal/backup"
 	"github.com/Siposattila/gobkup/internal/config"
 	"github.com/Siposattila/gobkup/internal/console"
 	"github.com/Siposattila/gobkup/internal/request"
@@ -18,6 +19,7 @@ func handleStream() {
 		case "Config": 
 			serializer.Serialize([]byte(response.Data), &config.Node)
 			console.Success("Got config from master!")
+            backup.BackupProcess()
         	writeToStream(makeRequest("KeepAlive", "OK"))
 			break
         case "NewNode":

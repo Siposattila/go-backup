@@ -19,7 +19,7 @@ var serverStream webtransport.Stream
 
 func SetupAndRunClient(endpoint string) {
 	console.Normal("Setting up and starting node server...")
-    listenForKill()
+	listenForKill()
 	certification.GetClientTlsConfig()
 	if config.Node.Debug {
 		console.Debug("Debug mode is active!")
@@ -41,7 +41,7 @@ func SetupAndRunClient(endpoint string) {
 		console.Fatal("The response status code was not 2xx the error is: " + error.Error())
 	}
 
-    var stream, streamError = connection.OpenStream()
+	var stream, streamError = connection.OpenStream()
 	if streamError != nil {
 		console.Error("There was an error during opening the stream: " + streamError.Error())
 	}
@@ -54,12 +54,12 @@ func SetupAndRunClient(endpoint string) {
 }
 
 func getClientName() string {
-    var name, nameError = os.Hostname()
-    if nameError != nil {
-        console.Fatal("Can't get client name. This means there is no hostname??")
-    }
+	var name, nameError = os.Hostname()
+	if nameError != nil {
+		console.Fatal("Can't get client name. This means there is no hostname??")
+	}
 
-    return name
+	return name
 }
 
 func CloseClient() {
