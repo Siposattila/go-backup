@@ -1,6 +1,17 @@
 package backup
 
-func BackupProcess() {
+type BackupInterface interface {
+    BackupProcess(cronExpression string)
+}
+
+type backup struct {
+}
+
+func NewBackup() BackupInterface {
+    return backup{}
+}
+
+func (b backup) BackupProcess(cronExpression string) {
 	//var timer, parseError = parse(config.Node.WhenToBackup)
 	//if parseError != nil {
 	//	console.Fatal("The given cron expression is invalid!")

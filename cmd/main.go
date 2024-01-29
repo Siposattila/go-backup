@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 
+	"github.com/Siposattila/gobkup/internal/backup"
 	"github.com/Siposattila/gobkup/internal/config"
 	"github.com/Siposattila/gobkup/internal/console"
 	"github.com/Siposattila/gobkup/internal/master"
@@ -19,6 +20,10 @@ func main() {
     var token = flag.String("token", "", "This flag is needed if you run the program in node mode.")
 
 	flag.Parse()
+
+    if isFlagPassed("debug") {
+        backup.BackupProcess()
+    }
 
 	if isFlagPassed("master") {
         var server master.Master
