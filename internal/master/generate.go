@@ -1,4 +1,4 @@
-package node
+package master
 
 import (
 	"crypto/md5"
@@ -9,9 +9,12 @@ import (
 	"github.com/Siposattila/gobkup/internal/console"
 )
 
-func AddNode(nodeId string) {
-	config.Master.Nodes[nodeId] = getMD5Hash(nodeId + time.Now().String())
-	config.UpdateConfig("master")
+func (master *Master) AddNode(nodeId string) {
+    if master.Config.Nodes == nil {
+        master.Config = config.LoadMasterConfig()
+    }
+	master.Config.Nodes[nodeId] = getMD5Hash(nodeId + time.Now().String())
+    config.UpdateMasterConfig(master.Config)
 	config.GenerateNodeConfig(nodeId)
 	console.Success("Node " + nodeId + " has been successfully added!")
 

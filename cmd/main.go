@@ -21,18 +21,16 @@ func main() {
 	flag.Parse()
 
 	if isFlagPassed("master") {
-		config.LoadConfig("master")
-        config.Master.Debug = isFlagPassed("debug")
-		master.SetupAndRunServer()
+        var server master.Master
+        server.Run(isFlagPassed("debug"))
 	}
 
 	if isFlagPassed("node") && isFlagPassed("endpoint") && isFlagPassed("token") {
         if isFlagPassed("master") {
             console.Fatal("You can't be the master and the node at the same time...")
         }
-        config.Node.Token = *token
-        config.Node.Debug = isFlagPassed("debug")
-        node.SetupAndRunClient(*endpoint)
+        var client node.Node
+        client.Run(*endpoint, *token, isFlagPassed("debug"))
 	}
 
 	if isFlagPassed("generate") {
@@ -43,8 +41,8 @@ func main() {
 		if *nodeName == "" {
 			console.Fatal("You must provide the name(or id) of the node.")
 		}
-		config.LoadConfig("master")
-		node.AddNode(*nodeName)
+        var server master.Master
+		server.AddNode(*nodeName)
 	}
 
     return

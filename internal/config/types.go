@@ -25,16 +25,16 @@ type NodeConfig struct {
 	Debug             bool     `json:"-"`
 }
 
-type NotificationEmailSenderAuth struct {
-	EmailReceiver string `json:"emailReceiver"`
-	EmailSender   string `json:"emailSender"`
-	User          string `json:"user"`
-	Password      string `json:"password"`
-	Host          string `json:"host"`
-	Port          int    `json:"port"`
+type EmailConfig struct {
+	Receiver string `json:"receiver"`
+	Sender   string `json:"sender"`
+	User     string `json:"user"`
+	Password string `json:"password"`
+	Host     string `json:"host"`
+	Port     int    `json:"port"`
 }
 
-type NotificationDiscordSenderAuth struct {
+type DiscordConfig struct {
 	WebHookId    string `json:"webHookId"`
 	WebHookToken string `json:"webHookToken"`
 }

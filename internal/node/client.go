@@ -2,11 +2,14 @@ package node
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
-	"time"
 
+	"github.com/Siposattila/gobkup/internal/alert"
 	"github.com/Siposattila/gobkup/internal/certification"
 	"github.com/Siposattila/gobkup/internal/config"
 	"github.com/Siposattila/gobkup/internal/console"
@@ -14,25 +17,34 @@ import (
 	"github.com/quic-go/webtransport-go"
 )
 
-var dialer webtransport.Dialer
-var serverStream webtransport.Stream
+type Node struct {
+	Dialer       webtransport.Dialer
+	ServerStream webtransport.Stream
+	Config       config.NodeConfig
+	DiscordAlert alert.AlertInterface
+	EmailAlert   alert.AlertInterface
+	initOnce     sync.Once
+}
 
-func SetupAndRunClient(endpoint string) {
+func (node *Node) init(token string, debug bool) {
+    node.Config = config.NodeConfig{
+        Token: token,
+        Debug: debug,
+    }
+	node.Dialer.RoundTripper = &http3.RoundTripper{}
+	node.getTlsConfig()
+}
+
+func (node *Node) Run(endpoint string, token string, debug bool) {
 	console.Normal("Setting up and starting node server...")
-	listenForKill()
-	certification.GetClientTlsConfig()
-	if config.Node.Debug {
+	node.initOnce.Do(func() { node.init(token, debug) })
+
+	if node.Config.Debug {
 		console.Debug("Debug mode is active!")
-		certification.TlsConfig.InsecureSkipVerify = true
 	}
 
-	dialer.RoundTripper = &http3.RoundTripper{
-		TLSClientConfig: certification.TlsConfig,
-	}
-
-	var ctx, _ = context.WithDeadline(context.Background(), time.Now().Add(10*time.Second))
-	var response, connection, error = dialer.Dial(ctx, endpoint, nil)
-
+	node.listenForKill()
+	var response, connection, error = node.Dialer.Dial(context.Background(), endpoint, nil)
 	if error != nil {
 		console.Fatal("Unable to connect to master: " + error.Error())
 	}
@@ -43,17 +55,17 @@ func SetupAndRunClient(endpoint string) {
 
 	var stream, streamError = connection.OpenStream()
 	if streamError != nil {
-		console.Error("There was an error during opening the stream: " + streamError.Error())
+		console.Fatal("There was an error during opening the stream: " + streamError.Error())
 	}
-	serverStream = stream
+	node.ServerStream = stream
 
 	console.Success("Node is up and running! Ready to communicate with the master!")
-	handleStream()
+	node.handleStream()
 
 	return
 }
 
-func getClientName() string {
+func (node *Node) getClientName() string {
 	var name, nameError = os.Hostname()
 	if nameError != nil {
 		console.Fatal("Can't get client name. This means there is no hostname??")
@@ -62,25 +74,42 @@ func getClientName() string {
 	return name
 }
 
-func CloseClient() {
-	dialer.Close()
-	console.Normal("Shutting down node client...")
+func (node *Node) Close() {
+    console.Normal("Shutting down node client...")
+	if node.ServerStream != nil {
+		node.ServerStream.Close()
+	}
+	node.Dialer.Close()
 
 	return
 }
 
-func listenForKill() {
+func (node *Node) listenForKill() {
 	var channel = make(chan os.Signal)
 	signal.Notify(channel, os.Interrupt, syscall.SIGTERM)
 
 	go func() {
 		<-channel
-		if serverStream != nil {
-			serverStream.Close()
-		}
-		CloseClient()
+		node.Close()
 		os.Exit(1)
 	}()
+
+	return
+}
+
+func (node *Node) getTlsConfig() {
+	var ca, _, caError = certification.GenerateCA()
+	if caError != nil {
+		console.Fatal("Unable to generate CA certificate: " + caError.Error())
+	}
+
+	var certPool = x509.NewCertPool()
+	certPool.AddCert(ca)
+	var tlsConfig = &tls.Config{RootCAs: certPool}
+	if node.Config.Debug {
+		tlsConfig.InsecureSkipVerify = true
+	}
+	node.Dialer.RoundTripper.TLSClientConfig = tlsConfig
 
 	return
 }

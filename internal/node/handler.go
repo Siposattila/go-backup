@@ -8,52 +8,52 @@ import (
 	"github.com/Siposattila/gobkup/internal/serializer"
 )
 
-func handleStream() {
+func (node *Node) handleStream() {
 	console.Normal("Trying to request for config from master...")
-	writeToStream(makeRequest("Config", "PLEASE"))
+	node.writeToStream(node.makeRequest(request.REQUEST_ID_CONFIG, "PLEASE"))
 	for {
 		var response request.MasterResponse
-		serializer.Serialize(readFromStream(), &response)
+		serializer.Serialize(node.readFromStream(), &response)
 
 		switch response.Id {
-		case "Config": 
-			serializer.Serialize([]byte(response.Data), &config.Node)
+		case request.REQUEST_ID_CONFIG:
+            var config = config.NodeConfig{}
+			serializer.Serialize([]byte(response.Data), &config)
+            config.Debug = node.Config.Debug
+            config.Token = node.Config.Token
+            node.Config = config
 			console.Success("Got config from master!")
-            backup.BackupProcess()
-        	writeToStream(makeRequest("KeepAlive", "OK"))
+			backup.BackupProcess()
 			break
-        case "NewNode":
-            console.Warning("This node is now registered at the master! The token was generated for this node at the master.")
-            return
-		case "NotValid":
+		case request.REQUEST_ID_NODE_REGISTERED:
+			console.Warning("This node is now registered at the master! The token was generated for this node at the master.")
+			return
+		case request.REQUEST_ID_AUTH_ERROR:
 			console.Fatal("Wrong credentials!")
 			break
-        case "KeepAlive":
-        	writeToStream(makeRequest("KeepAlive", "OK"))
-            break
 		}
 	}
 }
 
-func makeRequest(id string, data string) request.NodeRequest {
+func (node *Node) makeRequest(id int, data string) request.NodeRequest {
 	return request.NodeRequest{
 		Id:     id,
 		Data:   data,
-		NodeId: getClientName(),
-		Token:  config.Node.Token,
+		NodeId: node.getClientName(),
+		Token:  node.Config.Token,
 	}
 }
 
-func writeToStream(data any) {
-	var _, writeError = serverStream.Write(serializer.Deserialize(data))
+func (node *Node) writeToStream(data any) {
+	var _, writeError = node.ServerStream.Write(serializer.Deserialize(data))
 	if writeError != nil {
 		console.Error("Error during write to master: " + writeError.Error())
 	}
 }
 
-func readFromStream() []byte {
+func (node *Node) readFromStream() []byte {
 	var buffer = make([]byte, 1024)
-	var n, readError = serverStream.Read(buffer)
+	var n, readError = node.ServerStream.Read(buffer)
 	if readError != nil {
 		console.Error("Error during reading from master: " + readError.Error())
 	}

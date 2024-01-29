@@ -6,35 +6,42 @@ import (
 	"gopkg.in/gomail.v2"
 )
 
-var emailClient *gomail.Dialer
+type email struct {
+    Client *gomail.Dialer
+    Config config.EmailConfig
+}
 
-func InitEmailClient() {
+func NewEmail() AlertInterface {
+    return email{}
+}
+
+func (email email) Start() {
 	console.Normal("Starting email client...")
-	config.LoadConfig("email")
+	email.Config = config.LoadEmailAlertConfig()
 	console.Normal("Email client version: gomail")
-	emailClient = gomail.NewDialer(config.Email.Host, config.Email.Port, config.Email.User, config.Email.Password)
+	email.Client = gomail.NewDialer(email.Config.Host, email.Config.Port, email.Config.User, email.Config.Password)
 	console.Success("Email client started! Ready to send alerts!")
 
 	return
 }
 
-func CloseEmailClient() {
-	if emailClient != nil {
-		emailClient = nil
+func (email email) Close() {
+	if email.Client != nil {
+		email.Client = nil
 	}
 	console.Normal("Getting rid of the email client...")
 
 	return
 }
 
-func SendEmailAlert(subject string, message string) {
-	var email = gomail.NewMessage()
-	email.SetHeader("From", config.Email.EmailSender)
-	email.SetHeader("To", config.Email.EmailReceiver)
-	email.SetHeader("Subject", subject)
-	email.SetBody("text/html", message)
+func (email email) Send(message string) {
+	var mail = gomail.NewMessage()
+	mail.SetHeader("From", email.Config.Sender)
+	mail.SetHeader("To", email.Config.Receiver)
+	mail.SetHeader("Subject", "Gobkup email alert")
+	mail.SetBody("text/html", message)
 
-	var emailError = emailClient.DialAndSend(email)
+	var emailError = email.Client.DialAndSend(mail)
 	if emailError != nil {
 		console.Error("There was an error during the dialing or sending of the email alert: " + emailError.Error())
 	}

@@ -1,10 +1,10 @@
 package master
 
 import (
-	"context"
-	"net/http"
+	"crypto/tls"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 
 	"github.com/Siposattila/gobkup/internal/alert"
@@ -15,43 +15,45 @@ import (
 	"github.com/quic-go/webtransport-go"
 )
 
-var server webtransport.Server
+type Master struct {
+	Server       webtransport.Server
+	Config       config.MasterConfig
+	DiscordAlert alert.AlertInterface
+	EmailAlert   alert.AlertInterface
+	initOnce     sync.Once
+}
 
-func SetupAndRunServer() {
+func (master *Master) init(debug bool) {
+	master.Config = config.LoadMasterConfig()
+    master.Config.Debug = debug
+	master.Server = webtransport.Server{
+		H3: http3.Server{Addr: master.Config.Port},
+	}
+	master.getTlsConfig()
+
+	if master.Config.DiscordAlert {
+        master.DiscordAlert = alert.NewDiscord()
+		master.DiscordAlert.Start()
+	}
+
+	if master.Config.EmailAlert {
+        master.EmailAlert = alert.NewEmail()
+		master.EmailAlert.Start()
+	}
+}
+
+func (master *Master) Run(debug bool) {
 	console.Normal("Setting up and starting master server...")
-	listenForKill()
-	server = webtransport.Server{
-		H3: http3.Server{Addr: config.Master.Port},
-	}
+	master.initOnce.Do(func() { master.init(debug) })
 
-	certification.GetServerTlsConfig()
-	if config.Master.Debug {
+	if master.Config.Debug {
 		console.Debug("Debug mode is active!")
-		certification.TlsConfig.InsecureSkipVerify = true
 	}
-	server.H3.TLSConfig = certification.TlsConfig
 
-	setupAlertSystem()
-
-	http.HandleFunc("/master", func(writer http.ResponseWriter, request *http.Request) {
-		var connection, error = server.Upgrade(writer, request)
-		if error != nil {
-			console.Error("Upgrading failed: " + error.Error())
-			writer.WriteHeader(500)
-
-			return
-		}
-
-		var stream, streamError = connection.AcceptStream(context.Background())
-		if streamError != nil {
-			console.Error("There was an error during accepting the stream: " + streamError.Error())
-		}
-
-		go handleStream(stream)
-	})
-
-	console.Success("Master server is up and running! Ready to handle connections on port " + config.Master.Port)
-	var serverError = server.ListenAndServe()
+	master.setupEndpoint()
+	master.listenForKill()
+	console.Success("Master server is up and running! Ready to handle connections on port " + master.Config.Port)
+	var serverError = master.Server.ListenAndServe()
 	if serverError != nil {
 		console.Fatal("Error during server listen and serve: " + serverError.Error())
 	}
@@ -59,39 +61,57 @@ func SetupAndRunServer() {
 	return
 }
 
-func setupAlertSystem() {
-	if config.Master.DiscordAlert {
-		alert.InitDiscordClient()
-	}
-
-	if config.Master.EmailAlert {
-		alert.InitEmailClient()
-	}
-}
-
-func CloseServer() {
-	server.Close()
+func (master *Master) Close() {
 	console.Normal("Shutting down master server...")
+	master.Server.Close()
+	if master.Config.DiscordAlert {
+		master.DiscordAlert.Close()
+	}
+
+	if master.Config.EmailAlert {
+		master.EmailAlert.Close()
+	}
 
 	return
 }
 
-func listenForKill() {
+func (master *Master) listenForKill() {
 	var channel = make(chan os.Signal)
 	signal.Notify(channel, os.Interrupt, syscall.SIGTERM)
 
 	go func() {
 		<-channel
-		CloseServer()
-		if config.Master.DiscordAlert {
-			alert.CloseDiscordClient()
-		}
-
-		if config.Master.EmailAlert {
-			alert.CloseEmailClient()
-		}
+		master.Close()
 		os.Exit(1)
 	}()
+
+	return
+}
+
+func (master *Master) getTlsConfig() {
+	var ca, caPrivateKey, caError = certification.GenerateCA()
+	if caError != nil {
+		console.Fatal("Unable to generate CA certificate: " + caError.Error())
+	}
+
+	var leafCert, leafPrivateKey, leafError = certification.GenerateLeafCert(master.Config.Domain, ca, caPrivateKey)
+	if leafError != nil {
+		console.Fatal("Unable to generate leaf certificate: " + leafError.Error())
+	}
+
+	var tlsConfig = &tls.Config{
+		Certificates: []tls.Certificate{{
+			Certificate: [][]byte{leafCert.Raw},
+			PrivateKey:  leafPrivateKey,
+		}},
+		NextProtos: []string{"webtransport-go / quic-go"},
+	}
+
+	if master.Config.Debug {
+		tlsConfig.InsecureSkipVerify = true
+	}
+	master.Server.H3.TLSConfig = tlsConfig
+	console.Success("Tls config was obtained successfully!")
 
 	return
 }
