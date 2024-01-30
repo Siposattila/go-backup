@@ -1,7 +1,6 @@
 package node
 
 import (
-	"github.com/Siposattila/gobkup/internal/backup"
 	"github.com/Siposattila/gobkup/internal/config"
 	"github.com/Siposattila/gobkup/internal/console"
 	"github.com/Siposattila/gobkup/internal/request"
@@ -23,7 +22,6 @@ func (node *Node) handleStream() {
             config.Token = node.Config.Token
             node.Config = config
 			console.Success("Got config from master!")
-			backup.BackupProcess()
 			break
 		case request.REQUEST_ID_NODE_REGISTERED:
 			console.Warning("This node is now registered at the master! The token was generated for this node at the master.")

@@ -10,6 +10,7 @@ import (
 	"syscall"
 
 	"github.com/Siposattila/gobkup/internal/alert"
+	"github.com/Siposattila/gobkup/internal/backup"
 	"github.com/Siposattila/gobkup/internal/certification"
 	"github.com/Siposattila/gobkup/internal/config"
 	"github.com/Siposattila/gobkup/internal/console"
@@ -21,16 +22,17 @@ type Node struct {
 	Dialer       webtransport.Dialer
 	ServerStream webtransport.Stream
 	Config       config.NodeConfig
+	Backup       backup.BackupInterface
 	DiscordAlert alert.AlertInterface
 	EmailAlert   alert.AlertInterface
 	initOnce     sync.Once
 }
 
 func (node *Node) init(token string, debug bool) {
-    node.Config = config.NodeConfig{
-        Token: token,
-        Debug: debug,
-    }
+	node.Config = config.NodeConfig{
+		Token: token,
+		Debug: debug,
+	}
 	node.Dialer.RoundTripper = &http3.RoundTripper{}
 	node.getTlsConfig()
 }
@@ -75,7 +77,7 @@ func (node *Node) getClientName() string {
 }
 
 func (node *Node) Close() {
-    console.Normal("Shutting down node client...")
+	console.Normal("Shutting down node client...")
 	if node.ServerStream != nil {
 		node.ServerStream.Close()
 	}

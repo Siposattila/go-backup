@@ -22,7 +22,9 @@ func main() {
 	flag.Parse()
 
     if isFlagPassed("debug") {
-        backup.BackupProcess()
+        var process backup.BackupInterface
+        process = backup.NewBackup("* * * * *", []string{"text.txt"}, []string{}, []string{})
+        process.BackupProcess()
     }
 
 	if isFlagPassed("master") {

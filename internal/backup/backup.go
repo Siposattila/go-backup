@@ -1,17 +1,28 @@
 package backup
 
 type BackupInterface interface {
-    BackupProcess(cronExpression string)
+	BackupProcess()
 }
 
 type backup struct {
+	CronExpression       string
+	WhatToBackup         []string
+	ExcludeExtensions    []string
+	ExcludeFiles         []string
+	ParsedCronExpression cron
 }
 
-func NewBackup() BackupInterface {
-    return backup{}
+func NewBackup(cronExpression string, whatToBackup []string, excludeExtensions []string, excludeFiles []string) BackupInterface {
+	return backup{
+		CronExpression:    cronExpression,
+		WhatToBackup:      whatToBackup,
+		ExcludeExtensions: excludeExtensions,
+		ExcludeFiles:      excludeFiles,
+	}
 }
 
-func (b backup) BackupProcess(cronExpression string) {
+func (b backup) BackupProcess() {
+    b.parseCron()
 	//var timer, parseError = parse(config.Node.WhenToBackup)
 	//if parseError != nil {
 	//	console.Fatal("The given cron expression is invalid!")
