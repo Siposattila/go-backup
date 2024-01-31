@@ -13,6 +13,7 @@ require (
 	github.com/quic-go/qpack v0.4.0 // indirect
 	github.com/quic-go/quic-go v0.41.0 // indirect
 	github.com/quic-go/webtransport-go v0.6.0 // indirect
+	github.com/robfig/cron/v3 v3.0.0 // indirect
 	github.com/sasha-s/go-csync v0.0.0-20210812194225-61421b77c44b // indirect
 	go.uber.org/mock v0.3.0 // indirect
 	golang.org/x/crypto v0.15.0 // indirect
