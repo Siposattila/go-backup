@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 
-	"github.com/Siposattila/gobkup/internal/backup"
 	"github.com/Siposattila/gobkup/internal/config"
 	"github.com/Siposattila/gobkup/internal/console"
 	"github.com/Siposattila/gobkup/internal/master"
@@ -17,27 +16,27 @@ func main() {
 	flag.Bool("debug", false, "This flag will set the debug mode to true. If debug mode is set then the server will not use tls!")
 	var endpoint = flag.String("endpoint", "", "This flag will set the master endpoint.")
 	var nodeName = flag.String("add-node", "", "This flag will add a node. The node id you add should be the name of the server. --add-node <NodeId>")
-    var token = flag.String("token", "", "This flag is needed if you run the program in node mode.")
+	var token = flag.String("token", "", "This flag is needed if you run the program in node mode.")
 
 	flag.Parse()
 
-    if isFlagPassed("debug") {
-        var process backup.BackupInterface
-        process = backup.NewBackup("* * * * *", []string{"text.txt"}, []string{}, []string{})
-        process.BackupProcess()
-    }
+	if isFlagPassed("debug") {
+		// var process backup.BackupInterface
+		// process = backup.NewBackup("* * * * *", []string{"text.txt"}, []string{}, []string{})
+		// process.BackupProcess()
+	}
 
 	if isFlagPassed("master") {
-        var server master.Master
-        server.Run(isFlagPassed("debug"))
+		var server master.Master
+		server.Run(isFlagPassed("debug"))
 	}
 
 	if isFlagPassed("node") && isFlagPassed("endpoint") && isFlagPassed("token") {
-        if isFlagPassed("master") {
-            console.Fatal("You can't be the master and the node at the same time...")
-        }
-        var client node.Node
-        client.Run(*endpoint, *token, isFlagPassed("debug"))
+		if isFlagPassed("master") {
+			console.Fatal("You can't be the master and the node at the same time...")
+		}
+		var client node.Node
+		client.Run(*endpoint, *token, isFlagPassed("debug"))
 	}
 
 	if isFlagPassed("generate") {
@@ -48,11 +47,11 @@ func main() {
 		if *nodeName == "" {
 			console.Fatal("You must provide the name(or id) of the node.")
 		}
-        var server master.Master
+		var server master.Master
 		server.AddNode(*nodeName)
 	}
 
-    return
+	return
 }
 
 func isFlagPassed(name string) bool {
