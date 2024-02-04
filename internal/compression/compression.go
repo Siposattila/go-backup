@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"path"
 
 	"github.com/Siposattila/gobkup/internal/console"
 	"github.com/klauspost/compress/zip"
@@ -31,7 +32,7 @@ func compress(in io.Reader, out io.Writer) error {
 	return enc.Close()
 }
 
-func writeFiles(files []fs.DirEntry, writer *zip.Writer) {
+func (c Compression) writeFiles(files []fs.DirEntry, writer *zip.Writer) {
 	for _, file := range files {
 		var fileWriter, err = writer.Create(file.Name())
 		if err != nil {
@@ -39,11 +40,11 @@ func writeFiles(files []fs.DirEntry, writer *zip.Writer) {
 		}
 
 		if file.IsDir() {
-			writeFiles(getFiles(file.Name()), writer)
+			c.writeFiles(getFiles(path.Join(c.Path, file.Name())), writer)
 		}
 
 		if !file.IsDir() {
-			var openedFile, openError = os.Open(file.Name())
+			var openedFile, openError = os.Open(path.Join(c.Path, file.Name()))
 			if openError != nil {
 				console.Fatal(openError.Error())
 			}
@@ -72,16 +73,19 @@ func getFiles(name string) []fs.DirEntry {
 	return files
 }
 
-func (c Compression) ZipCompress() error {
-	var buffer = new(bytes.Buffer)
-	var writer = zip.NewWriter(buffer)
+func (c Compression) ZipCompress(name string) error {
+	var zipFile, createError = os.Create(name)
+	if createError != nil {
+		console.Fatal(createError.Error())
+	}
 
-	writeFiles(getFiles(c.Path), writer)
+	var writer = zip.NewWriter(zipFile)
+	c.writeFiles(getFiles(c.Path), writer)
 
 	return writer.Close()
 }
 
-func ZipDecompress() error {
+func (c Compression) ZipDecompress() error {
 	// TODO: implement
 	return errors.New("implement")
 }

@@ -20,7 +20,7 @@ type backup struct {
 }
 
 func NewBackup(cronExpression string, whatToBackup []string, excludeExtensions []string, excludeFiles []string) BackupInterface {
-    var newBackup = backup{
+	var newBackup = backup{
 		CronExpression:    cronExpression,
 		WhatToBackup:      whatToBackup,
 		ExcludeExtensions: excludeExtensions,
@@ -28,10 +28,10 @@ func NewBackup(cronExpression string, whatToBackup []string, excludeExtensions [
 	}
 	var cronParser = cron.NewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow)
 	var schedule, parseError = cronParser.Parse(newBackup.CronExpression)
-    if parseError != nil {
-        console.Fatal("Your cron expression is invalid or an error occured: " + parseError.Error())
-    }
-    newBackup.Cron = schedule
+	if parseError != nil {
+		console.Fatal("Your cron expression is invalid or an error occured: " + parseError.Error())
+	}
+	newBackup.Cron = schedule
 
 	return newBackup
 }
