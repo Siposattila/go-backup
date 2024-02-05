@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 
-	"github.com/Siposattila/gobkup/internal/compression"
 	"github.com/Siposattila/gobkup/internal/config"
 	"github.com/Siposattila/gobkup/internal/console"
 	"github.com/Siposattila/gobkup/internal/master"
@@ -20,15 +19,6 @@ func main() {
 	var token = flag.String("token", "", "This flag is needed if you run the program in node mode.")
 
 	flag.Parse()
-
-	if isFlagPassed("debug") {
-		// var process backup.BackupInterface
-		// process = backup.NewBackup("* * * * *", []string{"text.txt"}, []string{}, []string{})
-		// process.BackupProcess()
-		var compressionTest compression.Compression
-		compressionTest = compression.Compression{Path: "test"}
-		compressionTest.ZipCompress("test.zip")
-	}
 
 	if isFlagPassed("master") {
 		var server master.Master

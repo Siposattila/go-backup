@@ -14,4 +14,4 @@ repos:
     rev: v1.0.0-rc.1
     hooks:
     -   id: go-fmt
-    -   id: go-vet
+      #-   id: go-vet

@@ -85,7 +85,7 @@ func (c Compression) ZipCompress(name string) error {
 	return writer.Close()
 }
 
-func (c Compression) ZipDecompress() error {
+func (c Compression) ZipDecompress(name string) error {
 	// TODO: implement
 	return errors.New("implement")
 }

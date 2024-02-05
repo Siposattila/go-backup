@@ -3,12 +3,14 @@ package backup
 import (
 	"time"
 
+	"github.com/Siposattila/gobkup/internal/compression"
 	"github.com/Siposattila/gobkup/internal/console"
 	"github.com/robfig/cron/v3"
 )
 
 type BackupInterface interface {
-	BackupProcess()
+	BackupProcess(zipName string)
+	Stop()
 }
 
 type backup struct {
@@ -17,6 +19,7 @@ type backup struct {
 	ExcludeExtensions []string
 	ExcludeFiles      []string
 	Cron              cron.Schedule
+	stopChannel       chan bool
 }
 
 func NewBackup(cronExpression string, whatToBackup []string, excludeExtensions []string, excludeFiles []string) BackupInterface {
@@ -36,14 +39,25 @@ func NewBackup(cronExpression string, whatToBackup []string, excludeExtensions [
 	return newBackup
 }
 
-func (b backup) BackupProcess() {
+func (b backup) BackupProcess(zipName string) {
 	var timeSignal = time.After(b.Cron.Next(time.Now()).Sub(time.Now()))
+	console.Success("Next backup will be at: " + b.Cron.Next(time.Now()).String())
 	select {
 	case <-timeSignal:
-		// TODO: implement backup
-		console.Debug("TODO backup")
-		b.BackupProcess()
+		console.Normal("Backing the stuff up. This may take a long time!!!")
+		for _, path := range b.WhatToBackup {
+			var compress = compression.Compression{Path: path}
+			compress.ZipCompress("name.zip")
+		}
+		console.Success("Backup finished successfully!")
+		b.BackupProcess(zipName)
+	case <-b.stopChannel:
+		console.Normal("Stopping backup process...")
 	}
 
 	return
+}
+
+func (b backup) Stop() {
+	b.stopChannel <- true
 }

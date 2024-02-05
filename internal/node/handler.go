@@ -1,6 +1,9 @@
 package node
 
 import (
+	"time"
+
+	"github.com/Siposattila/gobkup/internal/backup"
 	"github.com/Siposattila/gobkup/internal/config"
 	"github.com/Siposattila/gobkup/internal/console"
 	"github.com/Siposattila/gobkup/internal/request"
@@ -16,12 +19,17 @@ func (node *Node) handleStream() {
 
 		switch response.Id {
 		case request.REQUEST_ID_CONFIG:
-            var config = config.NodeConfig{}
+			if node.Backup != nil {
+				node.Backup.Stop()
+			}
+			var config = config.NodeConfig{}
 			serializer.Serialize([]byte(response.Data), &config)
-            config.Debug = node.Config.Debug
-            config.Token = node.Config.Token
-            node.Config = config
+			config.Debug = node.Config.Debug
+			config.Token = node.Config.Token
+			node.Config = config
 			console.Success("Got config from master!")
+			node.Backup = backup.NewBackup(node.Config.WhenToBackup, node.Config.WhatToBackup, node.Config.ExcludeExtensions, node.Config.ExcludeFiles)
+			node.Backup.BackupProcess(node.Config.NodeId + "_backup_" + time.Now().String() + ".zip")
 			break
 		case request.REQUEST_ID_NODE_REGISTERED:
 			console.Warning("This node is now registered at the master! The token was generated for this node at the master.")
