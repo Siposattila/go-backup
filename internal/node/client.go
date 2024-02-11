@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/Siposattila/gobkup/internal/alert"
 	"github.com/Siposattila/gobkup/internal/backup"
@@ -34,6 +35,7 @@ func (node *Node) init(token string, debug bool) {
 		Debug: debug,
 	}
 	node.Dialer.RoundTripper = &http3.RoundTripper{}
+	node.Dialer.QuicConfig.KeepAlivePeriod = time.Duration(25 * time.Second)
 	node.getTlsConfig()
 }
 
