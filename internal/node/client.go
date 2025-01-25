@@ -48,7 +48,7 @@ func (node *Node) Run(endpoint string, token string, debug bool) {
 	}
 
 	node.listenForKill()
-	var response, connection, error = node.Dialer.Dial(context.Background(), endpoint, nil)
+	response, connection, error := node.Dialer.Dial(context.Background(), endpoint, nil)
 	if error != nil {
 		console.Fatal("Unable to connect to master: " + error.Error())
 	}
@@ -57,7 +57,7 @@ func (node *Node) Run(endpoint string, token string, debug bool) {
 		console.Fatal("The response status code was not 2xx the error is: " + error.Error())
 	}
 
-	var stream, streamError = connection.OpenStream()
+	stream, streamError := connection.OpenStream()
 	if streamError != nil {
 		console.Fatal("There was an error during opening the stream: " + streamError.Error())
 	}
@@ -65,12 +65,10 @@ func (node *Node) Run(endpoint string, token string, debug bool) {
 
 	console.Success("Node is up and running! Ready to communicate with the master!")
 	node.handleStream()
-
-	return
 }
 
 func (node *Node) getClientName() string {
-	var name, nameError = os.Hostname()
+	name, nameError := os.Hostname()
 	if nameError != nil {
 		console.Fatal("Can't get client name. This means there is no hostname??")
 	}
@@ -84,12 +82,10 @@ func (node *Node) Close() {
 		node.ServerStream.Close()
 	}
 	node.Dialer.Close()
-
-	return
 }
 
 func (node *Node) listenForKill() {
-	var channel = make(chan os.Signal)
+	channel := make(chan os.Signal)
 	signal.Notify(channel, os.Interrupt, syscall.SIGTERM)
 
 	go func() {
@@ -97,23 +93,19 @@ func (node *Node) listenForKill() {
 		node.Close()
 		os.Exit(1)
 	}()
-
-	return
 }
 
 func (node *Node) getTlsConfig() {
-	var ca, _, caError = certification.GenerateCA()
+	ca, _, caError := certification.GenerateCA()
 	if caError != nil {
 		console.Fatal("Unable to generate CA certificate: " + caError.Error())
 	}
 
-	var certPool = x509.NewCertPool()
+	certPool := x509.NewCertPool()
 	certPool.AddCert(ca)
-	var tlsConfig = &tls.Config{RootCAs: certPool}
+	tlsConfig := &tls.Config{RootCAs: certPool}
 	if node.Config.Debug {
 		tlsConfig.InsecureSkipVerify = true
 	}
 	node.Dialer.RoundTripper.TLSClientConfig = tlsConfig
-
-	return
 }

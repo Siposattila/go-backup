@@ -15,7 +15,7 @@ const discordAlertConfigName = "discord.json"
 const emailAlertConfigName = "email.json"
 
 func GenerateMasterConfig() {
-	var masterConfig = &MasterConfig{
+	masterConfig := &MasterConfig{
 		Nodes:                         map[string]string{},
 		Port:                          ":2000",
 		Domain:                        "localhost",
@@ -33,12 +33,10 @@ func GenerateMasterConfig() {
 	console.Success("Master config generated!")
 	generateDiscordAlertConfig()
 	generateEmailAlertConfig()
-
-	return
 }
 
 func GenerateNodeConfig(nodeId string) {
-	var nodeConfig = &NodeConfig{
+	nodeConfig := &NodeConfig{
 		NodeId:            nodeId,
 		WhenToBackup:      "",
 		WhatToBackup:      []string{},
@@ -48,24 +46,20 @@ func GenerateNodeConfig(nodeId string) {
 
 	generateConfig(nodeConfig, getNodeConfigName(nodeId))
 	console.Success("Node config generated!")
-
-	return
 }
 
 func generateDiscordAlertConfig() {
-	var discordConfig = &DiscordConfig{
+	discordConfig := &DiscordConfig{
 		WebHookId:    "",
 		WebHookToken: "",
 	}
 
 	generateConfig(discordConfig, discordAlertConfigName)
 	console.Success("Discord config generated!")
-
-	return
 }
 
 func generateEmailAlertConfig() {
-	var emailConfig = &EmailConfig{
+	emailConfig := &EmailConfig{
 		Receiver: "example@example.com",
 		Sender:   "example@example.com",
 		User:     "",
@@ -76,8 +70,6 @@ func generateEmailAlertConfig() {
 
 	generateConfig(emailConfig, emailAlertConfigName)
 	console.Success("Email config generated!")
-
-	return
 }
 
 func getNodeConfigName(nodeId string) string {
@@ -86,22 +78,18 @@ func getNodeConfigName(nodeId string) string {
 
 func generateConfig(config any, configName string) {
 	io.CreateDir(configPath)
-	var buffer = serializer.Deserialize(config)
+	buffer := serializer.Json.Deserialize(config)
 	io.WriteFile(configPath, configName, buffer)
-
-	return
 }
 
 func UpdateMasterConfig(config MasterConfig) {
-	io.WriteFile(configPath, masterConfigName, serializer.Deserialize(config))
+	io.WriteFile(configPath, masterConfigName, serializer.Json.Deserialize(config))
 	console.Success("Master config updated!")
-
-	return
 }
 
 func LoadMasterConfig() MasterConfig {
-	var config = MasterConfig{}
-	serializer.Serialize(io.ReadFile(configPath, masterConfigName), &config)
+	config := MasterConfig{}
+	serializer.Json.Serialize(io.ReadFile(configPath, masterConfigName), &config)
 	console.Success("Master config loaded!")
 
 	return config
@@ -109,10 +97,10 @@ func LoadMasterConfig() MasterConfig {
 
 // FIXME: do not load the master config again its not needed but for now its okay
 func LoadNodeConfig(nodeId string) NodeConfig {
-	var config = NodeConfig{}
-	var masterConfig = MasterConfig{}
-	serializer.Serialize(io.ReadFile(configPath, getNodeConfigName(nodeId)), &config)
-	serializer.Serialize(io.ReadFile(configPath, masterConfigName), &masterConfig)
+	config := NodeConfig{}
+	masterConfig := MasterConfig{}
+	serializer.Json.Serialize(io.ReadFile(configPath, getNodeConfigName(nodeId)), &config)
+	serializer.Json.Serialize(io.ReadFile(configPath, masterConfigName), &masterConfig)
 
 	config.ExcludeFiles = append(config.ExcludeFiles, masterConfig.ExcludeFiles...)
 	config.ExcludeExtensions = append(config.ExcludeExtensions, masterConfig.ExcludeExtensions...)
@@ -125,16 +113,16 @@ func LoadNodeConfig(nodeId string) NodeConfig {
 }
 
 func LoadDiscordAlertConfig() DiscordConfig {
-	var config = DiscordConfig{}
-	serializer.Serialize(io.ReadFile(configPath, discordAlertConfigName), &config)
+	config := DiscordConfig{}
+	serializer.Json.Serialize(io.ReadFile(configPath, discordAlertConfigName), &config)
 	console.Success("Discord config loaded!")
 
 	return config
 }
 
 func LoadEmailAlertConfig() EmailConfig {
-	var config = EmailConfig{}
-	serializer.Serialize(io.ReadFile(configPath, emailAlertConfigName), &config)
+	config := EmailConfig{}
+	serializer.Json.Serialize(io.ReadFile(configPath, emailAlertConfigName), &config)
 	console.Success("Email config loaded!")
 
 	return config

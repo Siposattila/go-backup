@@ -14,31 +14,27 @@ import (
 )
 
 type discord struct {
-    Client webhook.Client
-    Config config.DiscordConfig
+	Client webhook.Client
+	Config config.DiscordConfig
 }
 
-func NewDiscord() AlertInterface {
-    return discord{}
+func NewDiscord() Alert {
+	return discord{}
 }
 
 func (discord discord) Start() {
 	console.Normal("Starting discord client...")
-    discord.Config = config.LoadDiscordAlertConfig()
+	discord.Config = config.LoadDiscordAlertConfig()
 	console.Normal("Discord client version: (disgo)" + disgo.Version)
 	discord.Client = webhook.New(snowflake.MustParse(discord.Config.WebHookId), discord.Config.WebHookToken)
-    console.Success("Discord client started! Ready to send alerts!")
-
-	return
+	console.Success("Discord client started! Ready to send alerts!")
 }
 
 func (discord discord) Close() {
-    if discord.Client != nil {
-        discord.Client.Close(context.Background())
-        console.Normal("Shutting down discord client...")
-    }
-
-	return
+	if discord.Client != nil {
+		discord.Client.Close(context.Background())
+		console.Normal("Shutting down discord client...")
+	}
 }
 
 func (discord discord) Send(message string) {
@@ -46,6 +42,4 @@ func (discord discord) Send(message string) {
 	if alertError != nil {
 		console.Error("There was an error during the creation of the discord alert: " + alertError.Error())
 	}
-
-	return
 }

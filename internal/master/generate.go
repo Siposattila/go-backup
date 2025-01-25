@@ -10,11 +10,11 @@ import (
 )
 
 func (master *Master) AddNode(nodeId string) {
-    if master.Config.Nodes == nil {
-        master.Config = config.LoadMasterConfig()
-    }
+	if master.Config.Nodes == nil {
+		master.Config = config.LoadMasterConfig()
+	}
 	master.Config.Nodes[nodeId] = getMD5Hash(nodeId + time.Now().String())
-    config.UpdateMasterConfig(master.Config)
+	config.UpdateMasterConfig(master.Config)
 	config.GenerateNodeConfig(nodeId)
 	console.Success("Node " + nodeId + " has been successfully added!")
 

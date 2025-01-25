@@ -14,8 +14,6 @@ func CreateDir(path string) {
 			console.Fatal("Unable to create dir: " + mkdirError.Error())
 		}
 	}
-
-    return
 }
 
 func WriteFile(path string, fileName string, data []byte) {
@@ -23,15 +21,13 @@ func WriteFile(path string, fileName string, data []byte) {
 	if writeError != nil {
 		console.Fatal("Unable to write to file: " + writeError.Error())
 	}
-
-    return
 }
 
 func ReadFile(path string, fileName string) []byte {
-	var buffer, readError = os.ReadFile(path+"/"+fileName)
+	var buffer, readError = os.ReadFile(path + "/" + fileName)
 	if readError != nil {
 		console.Fatal("Unable to read file: " + readError.Error())
 	}
 
-    return buffer
+	return buffer
 }

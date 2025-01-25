@@ -25,19 +25,19 @@ type Master struct {
 
 func (master *Master) init(debug bool) {
 	master.Config = config.LoadMasterConfig()
-    master.Config.Debug = debug
+	master.Config.Debug = debug
 	master.Server = webtransport.Server{
 		H3: http3.Server{Addr: master.Config.Port},
 	}
 	master.getTlsConfig()
 
 	if master.Config.DiscordAlert {
-        master.DiscordAlert = alert.NewDiscord()
+		master.DiscordAlert = alert.NewDiscord()
 		master.DiscordAlert.Start()
 	}
 
 	if master.Config.EmailAlert {
-        master.EmailAlert = alert.NewEmail()
+		master.EmailAlert = alert.NewEmail()
 		master.EmailAlert.Start()
 	}
 }
@@ -53,12 +53,10 @@ func (master *Master) Run(debug bool) {
 	master.setupEndpoint()
 	master.listenForKill()
 	console.Success("Master server is up and running! Ready to handle connections on port " + master.Config.Port)
-	var serverError = master.Server.ListenAndServe()
+	serverError := master.Server.ListenAndServe()
 	if serverError != nil {
 		console.Fatal("Error during server listen and serve: " + serverError.Error())
 	}
-
-	return
 }
 
 func (master *Master) Close() {
@@ -71,12 +69,10 @@ func (master *Master) Close() {
 	if master.Config.EmailAlert {
 		master.EmailAlert.Close()
 	}
-
-	return
 }
 
 func (master *Master) listenForKill() {
-	var channel = make(chan os.Signal)
+	channel := make(chan os.Signal)
 	signal.Notify(channel, os.Interrupt, syscall.SIGTERM)
 
 	go func() {
@@ -84,22 +80,20 @@ func (master *Master) listenForKill() {
 		master.Close()
 		os.Exit(1)
 	}()
-
-	return
 }
 
 func (master *Master) getTlsConfig() {
-	var ca, caPrivateKey, caError = certification.GenerateCA()
+	ca, caPrivateKey, caError := certification.GenerateCA()
 	if caError != nil {
 		console.Fatal("Unable to generate CA certificate: " + caError.Error())
 	}
 
-	var leafCert, leafPrivateKey, leafError = certification.GenerateLeafCert(master.Config.Domain, ca, caPrivateKey)
+	leafCert, leafPrivateKey, leafError := certification.GenerateLeafCert(master.Config.Domain, ca, caPrivateKey)
 	if leafError != nil {
 		console.Fatal("Unable to generate leaf certificate: " + leafError.Error())
 	}
 
-	var tlsConfig = &tls.Config{
+	tlsConfig := &tls.Config{
 		Certificates: []tls.Certificate{{
 			Certificate: [][]byte{leafCert.Raw},
 			PrivateKey:  leafPrivateKey,
@@ -112,6 +106,4 @@ func (master *Master) getTlsConfig() {
 	}
 	master.Server.H3.TLSConfig = tlsConfig
 	console.Success("Tls config was obtained successfully!")
-
-	return
 }

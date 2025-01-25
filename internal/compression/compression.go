@@ -18,7 +18,7 @@ type Compression struct {
 }
 
 func compress(in io.Reader, out io.Writer) error {
-	var enc, err = zstd.NewWriter(out)
+	enc, err := zstd.NewWriter(out)
 	if err != nil {
 		return err
 	}
@@ -34,7 +34,7 @@ func compress(in io.Reader, out io.Writer) error {
 
 func (c Compression) writeFiles(files []fs.DirEntry, writer *zip.Writer) {
 	for _, file := range files {
-		var fileWriter, err = writer.Create(file.Name())
+		fileWriter, err := writer.Create(file.Name())
 		if err != nil {
 			console.Fatal(err.Error())
 		}
@@ -44,14 +44,14 @@ func (c Compression) writeFiles(files []fs.DirEntry, writer *zip.Writer) {
 		}
 
 		if !file.IsDir() {
-			var openedFile, openError = os.Open(path.Join(c.Path, file.Name()))
+			openedFile, openError := os.Open(path.Join(c.Path, file.Name()))
 			if openError != nil {
 				console.Fatal(openError.Error())
 			}
 			var fileReader io.Reader
 			fileReader = openedFile
 
-			var fileCompressed = new(bytes.Buffer)
+			fileCompressed := new(bytes.Buffer)
 			compress(fileReader, fileCompressed)
 
 			_, err = fileWriter.Write(fileCompressed.Bytes())
@@ -60,12 +60,10 @@ func (c Compression) writeFiles(files []fs.DirEntry, writer *zip.Writer) {
 			}
 		}
 	}
-
-	return
 }
 
 func getFiles(name string) []fs.DirEntry {
-	var files, error = os.ReadDir(name)
+	files, error := os.ReadDir(name)
 	if error != nil {
 		console.Fatal("The provided path is not found!")
 	}
@@ -74,12 +72,12 @@ func getFiles(name string) []fs.DirEntry {
 }
 
 func (c Compression) ZipCompress(name string) error {
-	var zipFile, createError = os.Create(name)
+	zipFile, createError := os.Create(name)
 	if createError != nil {
 		console.Fatal(createError.Error())
 	}
 
-	var writer = zip.NewWriter(zipFile)
+	writer := zip.NewWriter(zipFile)
 	c.writeFiles(getFiles(c.Path), writer)
 
 	return writer.Close()

@@ -10,7 +10,7 @@ import (
 )
 
 func GenerateCA() (*x509.Certificate, *rsa.PrivateKey, error) {
-	var certTemplate = &x509.Certificate{
+	certTemplate := &x509.Certificate{
 		SerialNumber:          big.NewInt(2024),
 		Subject:               pkix.Name{},
 		NotBefore:             time.Now(),
@@ -21,17 +21,17 @@ func GenerateCA() (*x509.Certificate, *rsa.PrivateKey, error) {
 		BasicConstraintsValid: true,
 	}
 
-	var caPrivateKey, generationError = rsa.GenerateKey(rand.Reader, 2048)
+	caPrivateKey, generationError := rsa.GenerateKey(rand.Reader, 2048)
 	if generationError != nil {
 		return nil, nil, generationError
 	}
 
-	var caBytes, creationErr = x509.CreateCertificate(rand.Reader, certTemplate, certTemplate, &caPrivateKey.PublicKey, caPrivateKey)
+	caBytes, creationErr := x509.CreateCertificate(rand.Reader, certTemplate, certTemplate, &caPrivateKey.PublicKey, caPrivateKey)
 	if creationErr != nil {
 		return nil, nil, creationErr
 	}
 
-	var ca, parseError = x509.ParseCertificate(caBytes)
+	ca, parseError := x509.ParseCertificate(caBytes)
 	if parseError != nil {
 		return nil, nil, parseError
 	}
@@ -40,7 +40,7 @@ func GenerateCA() (*x509.Certificate, *rsa.PrivateKey, error) {
 }
 
 func GenerateLeafCert(dnsName string, ca *x509.Certificate, caPrivateKey *rsa.PrivateKey) (*x509.Certificate, *rsa.PrivateKey, error) {
-	var certTemplate = &x509.Certificate{
+	certTemplate := &x509.Certificate{
 		SerialNumber: big.NewInt(1),
 		DNSNames:     []string{dnsName},
 		NotBefore:    time.Now(),
@@ -49,17 +49,17 @@ func GenerateLeafCert(dnsName string, ca *x509.Certificate, caPrivateKey *rsa.Pr
 		KeyUsage:     x509.KeyUsageDigitalSignature,
 	}
 
-	var privKey, genrationError = rsa.GenerateKey(rand.Reader, 2048)
+	privKey, genrationError := rsa.GenerateKey(rand.Reader, 2048)
 	if genrationError != nil {
 		return nil, nil, genrationError
 	}
 
-	var certBytes, creationError = x509.CreateCertificate(rand.Reader, certTemplate, ca, &privKey.PublicKey, caPrivateKey)
+	certBytes, creationError := x509.CreateCertificate(rand.Reader, certTemplate, ca, &privKey.PublicKey, caPrivateKey)
 	if creationError != nil {
 		return nil, nil, creationError
 	}
 
-	var cert, parseError = x509.ParseCertificate(certBytes)
+	cert, parseError := x509.ParseCertificate(certBytes)
 	if parseError != nil {
 		return nil, nil, parseError
 	}

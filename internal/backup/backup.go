@@ -23,14 +23,14 @@ type backup struct {
 }
 
 func NewBackup(cronExpression string, whatToBackup []string, excludeExtensions []string, excludeFiles []string) BackupInterface {
-	var newBackup = backup{
+	newBackup := backup{
 		CronExpression:    cronExpression,
 		WhatToBackup:      whatToBackup,
 		ExcludeExtensions: excludeExtensions,
 		ExcludeFiles:      excludeFiles,
 	}
-	var cronParser = cron.NewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow)
-	var schedule, parseError = cronParser.Parse(newBackup.CronExpression)
+	cronParser := cron.NewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow)
+	schedule, parseError := cronParser.Parse(newBackup.CronExpression)
 	if parseError != nil {
 		console.Fatal("Your cron expression is invalid or an error occured: " + parseError.Error())
 	}
@@ -40,13 +40,13 @@ func NewBackup(cronExpression string, whatToBackup []string, excludeExtensions [
 }
 
 func (b backup) BackupProcess(zipName string) {
-	var timeSignal = time.After(b.Cron.Next(time.Now()).Sub(time.Now()))
+	timeSignal := time.After(b.Cron.Next(time.Now()).Sub(time.Now()))
 	console.Success("Next backup will be at: " + b.Cron.Next(time.Now()).String())
 	select {
 	case <-timeSignal:
 		console.Normal("Backing the stuff up. This may take a long time!!!")
 		for _, path := range b.WhatToBackup {
-			var compress = compression.Compression{Path: path}
+			compress := compression.Compression{Path: path}
 			compress.ZipCompress("name.zip")
 		}
 		console.Success("Backup finished successfully!")
@@ -54,8 +54,6 @@ func (b backup) BackupProcess(zipName string) {
 	case <-b.stopChannel:
 		console.Normal("Stopping backup process...")
 	}
-
-	return
 }
 
 func (b backup) Stop() {

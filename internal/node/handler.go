@@ -15,15 +15,15 @@ func (node *Node) handleStream() {
 	node.writeToStream(node.makeRequest(request.REQUEST_ID_CONFIG, "PLEASE"))
 	for {
 		var response request.MasterResponse
-		serializer.Serialize(node.readFromStream(), &response)
+		serializer.Json.Serialize(node.readFromStream(), &response)
 
 		switch response.Id {
 		case request.REQUEST_ID_CONFIG:
 			if node.Backup != nil {
 				node.Backup.Stop()
 			}
-			var config = config.NodeConfig{}
-			serializer.Serialize([]byte(response.Data), &config)
+			config := config.NodeConfig{}
+			serializer.Json.Serialize([]byte(response.Data), &config)
 			config.Debug = node.Config.Debug
 			config.Token = node.Config.Token
 			node.Config = config
@@ -51,15 +51,15 @@ func (node *Node) makeRequest(id int, data string) request.NodeRequest {
 }
 
 func (node *Node) writeToStream(data any) {
-	var _, writeError = node.ServerStream.Write(serializer.Deserialize(data))
+	_, writeError := node.ServerStream.Write(serializer.Json.Deserialize(data))
 	if writeError != nil {
 		console.Error("Error during write to master: " + writeError.Error())
 	}
 }
 
 func (node *Node) readFromStream() []byte {
-	var buffer = make([]byte, 1024)
-	var n, readError = node.ServerStream.Read(buffer)
+	buffer := make([]byte, 1024)
+	n, readError := node.ServerStream.Read(buffer)
 	if readError != nil {
 		console.Error("Error during reading from master: " + readError.Error())
 	}

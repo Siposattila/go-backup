@@ -1,6 +1,6 @@
 module github.com/Siposattila/gobkup
 
-go 1.21.6
+go 1.23.5
 
 require (
 	github.com/disgoorg/disgo v0.17.0

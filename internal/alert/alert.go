@@ -1,6 +1,6 @@
 package alert
 
-type AlertInterface interface {
+type Alert interface {
 	Start()
 	Close()
 	Send(message string)
