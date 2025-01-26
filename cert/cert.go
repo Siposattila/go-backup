@@ -1,4 +1,4 @@
-package certification
+package cert
 
 import (
 	"crypto/rand"
