@@ -6,10 +6,7 @@ import (
 )
 
 const (
-	REQUEST_ID_CONFIG          = 10010
-	REQUEST_ID_NODE_REGISTERED = 10020
-	REQUEST_ID_AUTH_ERROR      = 10030
-	REQUEST_ID_KEEPALIVE       = 10040
+	REQUEST_ID_CONFIG = 10010
 )
 
 type Response struct {
@@ -20,21 +17,24 @@ type Response struct {
 type Request struct {
 	Id       int    `json:"id"`
 	Data     string `json:"data"`
-	DealerId string `json:"dealerId"`
-	// Token  string `json:"token"`
+	ClientId string `json:"clientId"`
 }
 
-func NewResponse(id int, data string) *Response {
+func NewResponse(id int, data any) *Response {
+	d, _ := serializer.Json.Deserialize(data)
+
 	return &Response{
 		Id:   id,
-		Data: data,
+		Data: string(d),
 	}
 }
 
-func NewRequest(id int, data string) *Request {
+func NewRequest(id int, data any) *Request {
+	d, _ := serializer.Json.Deserialize(data)
+
 	return &Request{
 		Id:   id,
-		Data: data,
+		Data: string(d),
 	}
 }
 
@@ -52,7 +52,7 @@ func Write[T *Request | *Response](stream webtransport.Stream, data T) (int, err
 	return n, nil
 }
 
-func Read[T Request | Response](stream webtransport.Stream, data T) (int, error) {
+func Read[T *Request | *Response](stream webtransport.Stream, data T) (int, error) {
 	buffer := make([]byte, 1024)
 	n, readError := stream.Read(buffer)
 	if readError != nil {

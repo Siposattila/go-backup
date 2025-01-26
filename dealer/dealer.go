@@ -3,6 +3,7 @@ package dealer
 import (
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 
 	"github.com/Siposattila/gobkup/client"
@@ -10,7 +11,7 @@ import (
 )
 
 type dealer interface {
-	Start()
+	Start(wg *sync.WaitGroup)
 	Stop()
 }
 
@@ -22,7 +23,8 @@ func Run(isServer, isClient bool) {
 		dealer = client.NewClient()
 	}
 
-	dealer.Start()
+	var wg sync.WaitGroup
+	dealer.Start(&wg)
 
 	// Setup logic for stopping dealer
 	channel := make(chan os.Signal, 1)
@@ -30,6 +32,8 @@ func Run(isServer, isClient bool) {
 	go func() {
 		<-channel
 		dealer.Stop()
-		os.Exit(1)
+		os.Exit(0)
 	}()
+
+	wg.Wait()
 }

@@ -75,10 +75,6 @@ func writeMessageToLog(label string, message any) {
 		if value.Type() == reflect.TypeOf([]byte(nil)) {
 			resultMessage = string(value.Bytes()[:])
 		}
-	case reflect.Interface:
-		if value.Type().Implements(reflect.TypeOf((*error)(nil)).Elem()) {
-			resultMessage = value.String()
-		}
 	}
 
 	log.Println(label + " " + resultMessage)

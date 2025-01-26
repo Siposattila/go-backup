@@ -1,8 +1,6 @@
 package config
 
 import (
-	"strings"
-
 	"github.com/Siposattila/gobkup/io"
 	"github.com/Siposattila/gobkup/serializer"
 )
@@ -10,18 +8,15 @@ import (
 const (
 	CONFIG_PATH            = "./config.d"
 	SERVER_CONFIG_FILENAME = "server.json"
-	CLIENT_CONFIG_FILENAME = "client_?.json"
+	CLIENT_CONFIG_FILENAME = "client.json"
+	BACKUP_CONFIG_FILENAME = "backup_?.json"
 )
 
-type Config[T Server | Client] interface {
+type Config[T Server | Client | Backup] interface {
 	Get() T
 }
 
-func getNodeConfigName(clientId string) string {
-	return strings.Replace(CLIENT_CONFIG_FILENAME, "?", clientId, 1)
-}
-
-func generateConfig[T *Server | *Client](config T, configName string) error {
+func generateConfig[T *Server | *Client | *Backup](config T, configName string) error {
 	io.CreateDir(CONFIG_PATH)
 	buffer, serializerError := serializer.Json.Deserialize(config)
 	if serializerError != nil {
@@ -33,7 +28,7 @@ func generateConfig[T *Server | *Client](config T, configName string) error {
 	return nil
 }
 
-func loadConfig[T *Server | *Client](rawConfig []byte) (*T, error) {
+func loadConfig[T *Server | *Client | *Backup](rawConfig []byte) (*T, error) {
 	config := new(T)
 	serializerError := serializer.Json.Serialize(rawConfig, config)
 	if serializerError != nil {

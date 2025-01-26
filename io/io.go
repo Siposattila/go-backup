@@ -10,7 +10,7 @@ func CreateDir(path string) {
 	if _, statError := os.Stat(path); errors.Is(statError, os.ErrNotExist) {
 		mkdirError := os.Mkdir(path, os.ModePerm)
 		if mkdirError != nil {
-			log.Fatal("Unable to create dir: " + mkdirError.Error())
+			log.Fatal("Unable to create dir.", mkdirError.Error())
 		}
 	}
 }
@@ -18,7 +18,7 @@ func CreateDir(path string) {
 func WriteFile(path, fileName string, data []byte) {
 	writeError := os.WriteFile(path+"/"+fileName, data, 0644)
 	if writeError != nil {
-		log.Fatal("Unable to write to file: " + writeError.Error())
+		log.Fatal("Unable to write to file.", writeError.Error())
 	}
 }
 

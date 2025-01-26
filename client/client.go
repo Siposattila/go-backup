@@ -1,62 +1,97 @@
 package client
 
 import (
+	"context"
+	"net/http"
+	"sync"
+	"time"
+
+	"github.com/Siposattila/gobkup/config"
 	"github.com/Siposattila/gobkup/log"
+	"github.com/Siposattila/gobkup/request"
+	"github.com/Siposattila/gobkup/serializer"
+	"github.com/quic-go/quic-go"
 	"github.com/quic-go/webtransport-go"
 )
 
 type Client interface {
-	Start()
+	Start(wg *sync.WaitGroup)
 	Stop()
 }
 
 type client struct {
-	Dialer webtransport.Dialer
-	Stream webtransport.Stream
+	Dialer       webtransport.Dialer
+	Stream       webtransport.Stream
+	Config       *config.Client
+	BackupConfig *config.Backup
 }
 
 func NewClient() Client {
-	return &client{}
+	var c client
+	c.Config = c.Config.Get()
+
+	c.Dialer = webtransport.Dialer{QUICConfig: &quic.Config{
+		KeepAlivePeriod: time.Duration(25 * time.Second),
+		EnableDatagrams: true,
+	}}
+	c.getTlsConfig()
+
+	return &c
 }
 
-func (c *client) Start() {
+func (c *client) Start(clientWg *sync.WaitGroup) {
 	log.GetLogger().Normal("Starting up client...")
 
-	// TODO: connect and handle
+	h := http.Header{}
+	h.Add("Authorization", "Basic "+c.Config.Token)
+	res, conn, err := c.Dialer.Dial(context.Background(), c.Config.Endpoint, h)
+	if err != nil {
+		log.GetLogger().Fatal("Unable to connect to server.", err.Error())
+	}
+
+	if res.StatusCode < 200 && res.StatusCode >= 300 {
+		log.GetLogger().Fatal("The response status code was not 2xx.", err.Error())
+	}
+
+	stream, streamError := conn.OpenStream()
+	if streamError != nil {
+		log.GetLogger().Fatal("There was an error during opening the stream.", streamError.Error())
+	}
+	c.Stream = stream
+
+	log.GetLogger().Success("Client is up and running! Ready to communicate with the server!")
+	c.handleStream()
 }
 
 func (c *client) Stop() {
-	// TODO: Stop
+	log.GetLogger().Normal("Stopping client...")
+	c.Stream.Close()
+	c.Dialer.Close()
 }
 
 func (c *client) handleStream() {
-	// TODO: handle
-	//console.Normal("Trying to request for config from master...")
-	//node.writeToStream(node.makeRequest(request.REQUEST_ID_CONFIG, "PLEASE"))
-	//for {
-	//	var response request.MasterResponse
-	//	serializer.Json.Serialize(node.readFromStream(), &response)
+	log.GetLogger().Normal("Trying to request backup config from server...")
+	request.Write(c.Stream, request.NewRequest(request.REQUEST_ID_CONFIG, ""))
 
-	//	switch response.Id {
-	//	case request.REQUEST_ID_CONFIG:
-	//		if node.Backup != nil {
-	//			node.Backup.Stop()
-	//		}
-	//		config := config.NodeConfig{}
-	//		serializer.Json.Serialize([]byte(response.Data), &config)
-	//		config.Debug = node.Config.Debug
-	//		config.Token = node.Config.Token
-	//		node.Config = config
-	//		console.Success("Got config from master!")
-	//		node.Backup = backup.NewBackup(node.Config.WhenToBackup, node.Config.WhatToBackup, node.Config.ExcludeExtensions, node.Config.ExcludeFiles)
-	//		node.Backup.BackupProcess(node.Config.NodeId + "_backup_" + time.Now().String() + ".zip")
-	//		break
-	//	case request.REQUEST_ID_NODE_REGISTERED:
-	//		console.Warning("This node is now registered at the master! The token was generated for this node at the master.")
-	//		return
-	//	case request.REQUEST_ID_AUTH_ERROR:
-	//		console.Fatal("Wrong credentials!")
-	//		break
-	//	}
-	//}
+	for {
+		resp := request.Response{}
+		n, readError := request.Read(c.Stream, &resp)
+		if readError != nil {
+			log.GetLogger().Error("Read error occured during stream handling.", readError.Error())
+			break
+		}
+
+		log.GetLogger().Debug("Read length: ", n)
+
+		switch resp.Id {
+		case request.REQUEST_ID_CONFIG:
+			config := config.Backup{}
+			serializerError := serializer.Json.Serialize([]byte(resp.Data), &config)
+			if serializerError != nil {
+				log.GetLogger().Fatal("Error occured during getting backup config.", serializerError.Error())
+			}
+			c.BackupConfig = &config
+			log.GetLogger().Success("Got backup config from server!")
+		}
+	}
 }

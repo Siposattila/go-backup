@@ -59,12 +59,12 @@ func (s *Server) Get() *Server {
 
 		generationError := generateConfig(&config, SERVER_CONFIG_FILENAME)
 		if generationError != nil {
-			log.GetLogger().Fatal(generationError)
+			log.GetLogger().Fatal(generationError.Error())
 		}
 	} else {
 		loadedConfig, loadError := loadConfig[*Server](rawConfig)
 		if loadError != nil {
-			log.GetLogger().Fatal(loadError)
+			log.GetLogger().Fatal(loadError.Error())
 		}
 
 		config = **loadedConfig
