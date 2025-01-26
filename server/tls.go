@@ -2,20 +2,20 @@ package server
 
 import (
 	"crypto/tls"
-	"log"
 
 	"github.com/Siposattila/gobkup/cert"
+	"github.com/Siposattila/gobkup/log"
 )
 
 func (s *server) getTlsConfig() {
 	ca, caPrivateKey, caError := cert.GenerateCA()
 	if caError != nil {
-		log.Fatal("Unable to generate CA certificate: " + caError.Error())
+		log.GetLogger().Fatal("Unable to generate CA certificate: ", caError)
 	}
 
 	leafCert, leafPrivateKey, leafError := cert.GenerateLeafCert("server", ca, caPrivateKey)
 	if leafError != nil {
-		log.Fatal("Unable to generate leaf certificate: " + leafError.Error())
+		log.GetLogger().Fatal("Unable to generate leaf certificate: ", leafError)
 	}
 
 	tlsConfig := &tls.Config{
@@ -28,5 +28,5 @@ func (s *server) getTlsConfig() {
 
 	tlsConfig.InsecureSkipVerify = true
 	s.Transport.H3.TLSConfig = tlsConfig
-	log.Println("Tls config was obtained successfully!")
+	log.GetLogger().Success("Tls config was obtained successfully!")
 }

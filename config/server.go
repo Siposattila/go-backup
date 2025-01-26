@@ -1,6 +1,9 @@
 package config
 
-import "github.com/Siposattila/gobkup/io"
+import (
+	"github.com/Siposattila/gobkup/io"
+	"github.com/Siposattila/gobkup/log"
+)
 
 type Server struct {
 	Port                          string `json:"port"`
@@ -53,9 +56,18 @@ func (s *Server) Get() *Server {
 			},
 			RegisterNodeIfNotKnown: true,
 		}
-		generateConfig(&config, SERVER_CONFIG_FILENAME)
-	} else {
 
+		generationError := generateConfig(&config, SERVER_CONFIG_FILENAME)
+		if generationError != nil {
+			log.GetLogger().Fatal(generationError)
+		}
+	} else {
+		loadedConfig, loadError := loadConfig[*Server](rawConfig)
+		if loadError != nil {
+			log.GetLogger().Fatal(loadError)
+		}
+
+		config = **loadedConfig
 	}
 
 	return &config

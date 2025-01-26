@@ -1,0 +1,1 @@
+{"port":":2000","domain":"localhost","backupPath":".","storageAlertTresholdInPercent":95,"registerNodeIfNotKnown":true,"emailAlert":false,"emailReceiver":"example@example.com","emailSender":"example@example.com","emailUser":"","emailPassword":"","emailHost":"","emailPort":25,"discordAlert":false,"discordWebHookId":"","discordWebHookToken":""}

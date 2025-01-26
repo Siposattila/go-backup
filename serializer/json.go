@@ -1,24 +1,23 @@
 package serializer
 
-import (
-	"encoding/json"
-	"log"
-)
+import "encoding/json"
 
 type jsonSerializer struct{}
 
-func (js *jsonSerializer) Deserialize(data any) []byte {
+func (js *jsonSerializer) Deserialize(data any) ([]byte, error) {
 	buffer, marshalError := json.Marshal(data)
 	if marshalError != nil {
-		log.Fatal("Unable to desirialize data: " + marshalError.Error())
+		return nil, marshalError
 	}
 
-	return buffer
+	return buffer, nil
 }
 
-func (js *jsonSerializer) Serialize(data []byte, structType any) {
+func (js *jsonSerializer) Serialize(data []byte, structType any) error {
 	unMarshalError := json.Unmarshal(data, structType)
 	if unMarshalError != nil {
-		log.Fatal("Unable to serialize data: " + unMarshalError.Error())
+		return unMarshalError
 	}
+
+	return nil
 }

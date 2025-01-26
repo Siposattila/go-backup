@@ -25,7 +25,7 @@ func Run(isServer, isClient bool) {
 	dealer.Start()
 
 	// Setup logic for stopping dealer
-	channel := make(chan os.Signal)
+	channel := make(chan os.Signal, 1)
 	signal.Notify(channel, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-channel

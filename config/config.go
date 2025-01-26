@@ -21,14 +21,24 @@ func getNodeConfigName(clientId string) string {
 	return strings.Replace(CLIENT_CONFIG_FILENAME, "?", clientId, 1)
 }
 
-func generateConfig[T *Server | *Client](config T, configName string) {
+func generateConfig[T *Server | *Client](config T, configName string) error {
 	io.CreateDir(CONFIG_PATH)
-	buffer := serializer.Json.Deserialize(config)
+	buffer, serializerError := serializer.Json.Deserialize(config)
+	if serializerError != nil {
+		return serializerError
+	}
+
 	io.WriteFile(CONFIG_PATH, configName, buffer)
+
+	return nil
 }
 
-//func loadConfig(rawConfig []byte, configName string) {
-//	io.CreateDir(CONFIG_PATH)
-//	buffer := serializer.Json.Deserialize(rawConfig)
-//	io.WriteFile(CONFIG_PATH, configName, buffer)
-//}
+func loadConfig[T *Server | *Client](rawConfig []byte) (*T, error) {
+	config := new(T)
+	serializerError := serializer.Json.Serialize(rawConfig, config)
+	if serializerError != nil {
+		return nil, serializerError
+	}
+
+	return config, nil
+}
