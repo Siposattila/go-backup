@@ -29,12 +29,13 @@ func NewResponse(id int, data any) *Response {
 	}
 }
 
-func NewRequest(id int, data any) *Request {
+func NewRequest(clientId string, id int, data any) *Request {
 	d, _ := serializer.Json.Deserialize(data)
 
 	return &Request{
-		Id:   id,
-		Data: string(d),
+		Id:       id,
+		Data:     string(d),
+		ClientId: clientId,
 	}
 }
 

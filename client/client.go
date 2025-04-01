@@ -71,7 +71,7 @@ func (c *client) Stop() {
 
 func (c *client) handleStream() {
 	log.GetLogger().Normal("Trying to request backup config from server...")
-	request.Write(c.Stream, request.NewRequest(request.REQUEST_ID_CONFIG, ""))
+	request.Write(c.Stream, request.NewRequest(c.Config.ClientId, request.REQUEST_ID_CONFIG, ""))
 
 	for {
 		resp := request.Response{}
