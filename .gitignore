@@ -1,4 +1,2 @@
-main
-cmd/config/
-cmd/test/
-test.txt
+config.d/
+gobkup.log
