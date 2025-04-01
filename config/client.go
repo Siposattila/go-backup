@@ -15,7 +15,6 @@ type Client struct {
 }
 
 type Backup struct {
-	ClientId          string   `json:"clientId"`
 	WhenToBackup      string   `json:"whenToBackup"`
 	WhatToBackup      []string `json:"whatToBackup"`
 	ExcludeExtensions []string `json:"excludeExtensions"`
@@ -61,19 +60,18 @@ func (c *Client) Get() *Client {
 	return &config
 }
 
-func (b *Backup) Get() *Backup {
+func (b *Backup) Get(clientId string) *Backup {
 	var config Backup
-	rawConfig, readError := io.ReadFile(CONFIG_PATH, getBackupConfigName(b.ClientId))
+	rawConfig, readError := io.ReadFile(CONFIG_PATH, getBackupConfigName(clientId))
 	if readError != nil {
 		config = Backup{
-			ClientId:          getClientName(),
-			WhenToBackup:      "",
+			WhenToBackup:      "0 0 * * *",
 			WhatToBackup:      []string{},
 			ExcludeExtensions: []string{},
 			ExcludeFiles:      []string{},
 		}
 
-		generationError := generateConfig(&config, getBackupConfigName(b.ClientId))
+		generationError := generateConfig(&config, getBackupConfigName(clientId))
 		if generationError != nil {
 			log.GetLogger().Fatal(generationError.Error())
 		}

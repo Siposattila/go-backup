@@ -124,8 +124,7 @@ func (s *server) handleStream(stream webtransport.Stream) {
 			log.GetLogger().Normal(r.ClientId + " sent a request for it's backup config.")
 
 			var backupConfig config.Backup
-			backupConfig.ClientId = r.ClientId
-			backupConfig = *backupConfig.Get()
+			backupConfig = *backupConfig.Get(r.ClientId)
 			request.Write(stream, request.NewResponse(request.REQUEST_ID_CONFIG, backupConfig))
 
 			log.GetLogger().Success("Backup config sent to " + r.ClientId)
