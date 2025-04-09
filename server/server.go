@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Siposattila/gobkup/alert"
 	"github.com/Siposattila/gobkup/config"
 	"github.com/Siposattila/gobkup/log"
 	"github.com/Siposattila/gobkup/request"
@@ -22,6 +23,8 @@ type Server interface {
 type server struct {
 	Transport webtransport.Server
 	Config    *config.Server
+	Discord   alert.AlertInterface
+	Email     alert.AlertInterface
 }
 
 func NewServer() Server {
@@ -37,7 +40,8 @@ func NewServer() Server {
 	s.getTlsConfig()
 
 	if s.Config.DiscordAlert {
-		// TODO: discord alert
+		s.Discord = alert.NewDiscord(s.Config.DiscordWebHookId, s.Config.DiscordWebHookToken)
+		s.Discord.Start()
 	}
 
 	if s.Config.EmailAlert {
@@ -66,6 +70,10 @@ func (s *server) Start(serverWg *sync.WaitGroup) {
 func (s *server) Stop() {
 	log.GetLogger().Normal("Stopping server...")
 	s.Transport.Close()
+
+	if s.Discord != nil {
+		s.Discord.Stop()
+	}
 }
 
 func (s *server) setupEndpoint() {
@@ -114,6 +122,12 @@ func (s *server) handleStream(stream webtransport.Stream) {
 		n, readError := request.Read(stream, &r)
 		if readError != nil {
 			log.GetLogger().Error("Read error occured during stream handling.", readError.Error())
+
+			// TODO: should be in a wrapper might use in other places
+			if s.Discord != nil {
+				s.Discord.Send("Error connection suddenly closed for a client check your clients!")
+			}
+
 			break
 		}
 
