@@ -45,7 +45,15 @@ func NewServer() Server {
 	}
 
 	if s.Config.EmailAlert {
-		// TODO: email alert
+		s.Email = alert.NewEmail(
+			s.Config.EmailReceiver,
+			s.Config.EmailSender,
+			s.Config.EmailUser,
+			s.Config.EmailPassword,
+			s.Config.EmailHost,
+			s.Config.EmailPort,
+		)
+		s.Email.Start()
 	}
 
 	return &s
@@ -73,6 +81,10 @@ func (s *server) Stop() {
 
 	if s.Discord != nil {
 		s.Discord.Stop()
+	}
+
+	if s.Email != nil {
+		s.Email.Stop()
 	}
 }
 
@@ -147,5 +159,9 @@ func (s *server) handleStream(stream webtransport.Stream) {
 func (s *server) alertSystem(message string) {
 	if s.Discord != nil {
 		s.Discord.Send(message)
+	}
+
+	if s.Email != nil {
+		s.Email.Send(message)
 	}
 }
