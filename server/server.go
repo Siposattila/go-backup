@@ -122,11 +122,9 @@ func (s *server) handleStream(stream webtransport.Stream) {
 		n, readError := request.Read(stream, &r)
 		if readError != nil {
 			log.GetLogger().Error("Read error occured during stream handling.", readError.Error())
-
-			// TODO: should be in a wrapper might use in other places
-			if s.Discord != nil {
-				s.Discord.Send("Error connection suddenly closed for a client check your clients!")
-			}
+			// TODO: need better way to track client by stream
+			// so that alert system can be more accurate
+			s.alertSystem("Error connection suddenly closed for a client check your clients!")
 
 			break
 		}
@@ -143,5 +141,11 @@ func (s *server) handleStream(stream webtransport.Stream) {
 
 			log.GetLogger().Success("Backup config sent to " + r.ClientId)
 		}
+	}
+}
+
+func (s *server) alertSystem(message string) {
+	if s.Discord != nil {
+		s.Discord.Send(message)
 	}
 }
