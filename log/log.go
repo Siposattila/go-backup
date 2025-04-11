@@ -71,6 +71,8 @@ func writeMessageToLog(label string, message any) {
 		resultMessage = fmt.Sprintf("%d", value.Int())
 	case reflect.Float32, reflect.Float64:
 		resultMessage = fmt.Sprintf("%f", value.Float())
+	case reflect.Uint32, reflect.Uint64:
+		resultMessage = fmt.Sprintf("%d", value.Uint())
 	case reflect.Slice:
 		if value.Type() == reflect.TypeOf([]byte(nil)) {
 			resultMessage = string(value.Bytes()[:])
