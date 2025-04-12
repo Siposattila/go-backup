@@ -127,30 +127,36 @@ func (s *server) setupEndpoint() {
 
 func (s *server) handleStream(stream webtransport.Stream) {
 	defer stream.Close()
+	var clientId string
 
 	for {
 		r := request.Request{}
 		n, readError := request.Read(stream, &r)
 		if readError != nil {
-			log.GetLogger().Error("Read error occured during stream handling.", readError.Error())
-			// TODO: need better way to track client by stream
-			// so that alert system can be more accurate
-			s.alertSystem("Error connection suddenly closed for a client check your clients!")
+			source := "unknown"
+			if clientId != "" {
+				source = clientId
+			}
 
+			log.GetLogger().Error("Read error occured during stream handling.", "Client: "+source, readError.Error())
+			s.alertSystem("Error connection suddenly closed for client!\nClient: " + source + "\n" + readError.Error())
 			break
 		}
 
 		log.GetLogger().Debug("Read length: ", n)
+		if clientId == "" {
+			clientId = r.ClientId
+		}
 
 		switch r.Id {
 		case request.REQUEST_ID_CONFIG:
-			log.GetLogger().Normal(r.ClientId + " sent a request for it's backup config.")
+			log.GetLogger().Normal(clientId + " sent a request for it's backup config.")
 
 			var backupConfig config.Backup
-			backupConfig = *backupConfig.Get(r.ClientId)
+			backupConfig = *backupConfig.Get(clientId)
 			request.Write(stream, request.NewResponse(request.REQUEST_ID_CONFIG, backupConfig))
 
-			log.GetLogger().Success("Backup config sent to " + r.ClientId)
+			log.GetLogger().Success("Backup config sent to " + clientId)
 		}
 	}
 }
