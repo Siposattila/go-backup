@@ -98,8 +98,7 @@ func (s *server) setupEndpoint() {
 			return
 		}
 
-		// TODO: make username/password configurable
-		if username != "server" || password != "123456" {
+		if username != s.Config.Username || password != s.Config.Password {
 			log.GetLogger().Error("Authentication error occured (Wrong creds).", r.RemoteAddr)
 			w.WriteHeader(401)
 

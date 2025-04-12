@@ -8,6 +8,8 @@ import (
 type Server struct {
 	Port                          string `json:"port"`
 	Domain                        string `json:"domain"`
+	Username                      string `json:"username"`
+	Password                      string `json:"password"`
 	BackupPath                    string `json:"backupPath"`
 	StorageAlertTresholdInPercent int    `json:"storageAlertTresholdInPercent"`
 	RegisterNodeIfNotKnown        bool   `json:"registerNodeIfNotKnown"`
@@ -38,6 +40,8 @@ func (s *Server) Get() *Server {
 		config = Server{
 			Port:                          ":2000",
 			Domain:                        "localhost",
+			Username:                      "backup",
+			Password:                      "123456",
 			BackupPath:                    ".",
 			StorageAlertTresholdInPercent: 95,
 			EmailAlert:                    false,
