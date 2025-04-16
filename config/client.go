@@ -15,10 +15,9 @@ type Client struct {
 }
 
 type Backup struct {
-	WhenToBackup      string   `json:"whenToBackup"`
-	WhatToBackup      []string `json:"whatToBackup"`
-	ExcludeExtensions []string `json:"excludeExtensions"`
-	ExcludeFiles      []string `json:"excludeFiles"`
+	WhenToBackup string   `json:"whenToBackup"`
+	WhatToBackup []string `json:"whatToBackup"`
+	Exclude      []string `json:"exclude"`
 }
 
 func getBackupConfigName(clientId string) string {
@@ -65,10 +64,9 @@ func (b *Backup) Get(clientId string) *Backup {
 	rawConfig, readError := io.ReadFile(CONFIG_PATH, getBackupConfigName(clientId))
 	if readError != nil {
 		config = Backup{
-			WhenToBackup:      "0 0 * * *",
-			WhatToBackup:      []string{},
-			ExcludeExtensions: []string{},
-			ExcludeFiles:      []string{},
+			WhenToBackup: "0 0 * * *",
+			WhatToBackup: []string{},
+			Exclude:      []string{},
 		}
 
 		generationError := generateConfig(&config, getBackupConfigName(clientId))

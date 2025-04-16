@@ -103,9 +103,8 @@ func (c *client) handleStream() {
 func (c *client) startBackup() {
 	c.Backup = backup.NewBackup(
 		c.BackupConfig.WhenToBackup,
-		c.BackupConfig.WhatToBackup,
-		c.BackupConfig.ExcludeExtensions,
-		c.BackupConfig.ExcludeFiles,
+		&c.BackupConfig.WhatToBackup,
+		&c.BackupConfig.Exclude,
 	)
 
 	c.Backup.Backup()

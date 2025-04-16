@@ -1,6 +1,8 @@
 package backup
 
 import (
+	"fmt"
+	"os"
 	"time"
 
 	"github.com/Siposattila/gobkup/log"
@@ -13,20 +15,18 @@ type BackupInterface interface {
 }
 
 type backup struct {
-	CronExpression    string
-	WhatToBackup      []string
-	ExcludeExtensions []string
-	ExcludeFiles      []string
-	Cron              cron.Schedule
-	stopChannel       chan bool
+	CronExpression string
+	WhatToBackup   *[]string
+	Exclude        *[]string
+	Cron           cron.Schedule
+	stopChannel    chan bool
 }
 
-func NewBackup(cronExpression string, whatToBackup []string, excludeExtensions []string, excludeFiles []string) BackupInterface {
+func NewBackup(cronExpression string, whatToBackup *[]string, exclude *[]string) BackupInterface {
 	var newBackup = backup{
-		CronExpression:    cronExpression,
-		WhatToBackup:      whatToBackup,
-		ExcludeExtensions: excludeExtensions,
-		ExcludeFiles:      excludeFiles,
+		CronExpression: cronExpression,
+		WhatToBackup:   whatToBackup,
+		Exclude:        exclude,
 	}
 
 	var schedule, parseError = cron.
@@ -42,14 +42,15 @@ func NewBackup(cronExpression string, whatToBackup []string, excludeExtensions [
 
 func (b *backup) Backup() {
 	var timeSignal = time.After(time.Until(b.Cron.Next(time.Now())))
-	log.GetLogger().Success("Next backup will be at: " + b.Cron.Next(time.Now()).String())
+	log.GetLogger().Success("Next backup will be at: " + b.Cron.Next(time.Now()).Format("15:04:05"))
 	select {
 	case <-timeSignal:
 		log.GetLogger().Normal("Backing up...")
-		// fmt.Sprintf("%s_backup.zip", time.Now().String()
-		//for _, path := range b.WhatToBackup {
-		// TODO: implement backup process
-		//}
+
+		log.GetLogger().Debug(fmt.Sprintf("%s_backup.zip", time.Now().Format("20060102150405")))
+		c := compression{BackupPath: os.TempDir(), Paths: b.WhatToBackup, Exclude: b.Exclude}
+		c.zipCompress(fmt.Sprintf("%s_backup.zip", time.Now().Format("20060102150405")))
+
 		log.GetLogger().Success("Backup finished successfully!")
 		b.Backup()
 	case <-b.stopChannel:
