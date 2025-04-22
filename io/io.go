@@ -2,31 +2,39 @@ package io
 
 import (
 	"errors"
-	"log"
 	"os"
+	"path"
+
+	"github.com/Siposattila/gobkup/log"
 )
 
 func CreateDir(path string) {
 	if _, statError := os.Stat(path); errors.Is(statError, os.ErrNotExist) {
 		mkdirError := os.Mkdir(path, os.ModePerm)
 		if mkdirError != nil {
-			log.Fatal("Unable to create dir.", mkdirError.Error())
+			log.GetLogger().Fatal("Unable to create dir.", mkdirError.Error())
 		}
 	}
 }
 
-func WriteFile(path, fileName string, data []byte) {
-	writeError := os.WriteFile(path+"/"+fileName, data, 0644)
+func WriteFile(dir, name string, data []byte) {
+	writeError := os.WriteFile(path.Join(dir, name), data, 0644)
 	if writeError != nil {
-		log.Fatal("Unable to write to file.", writeError.Error())
+		log.GetLogger().Fatal("Unable to write to file.", writeError.Error())
 	}
 }
 
-func ReadFile(path, fileName string) ([]byte, error) {
-	buffer, readError := os.ReadFile(path + "/" + fileName)
+func ReadFile(dir, name string) ([]byte, error) {
+	buffer, readError := os.ReadFile(path.Join(dir, name))
 	if readError != nil {
 		return *new([]byte), readError
 	}
 
 	return buffer, nil
+}
+
+func Delete(name string) {
+	if err := os.Remove(name); err != nil {
+		log.GetLogger().Warning("Was not able to delete " + name)
+	}
 }

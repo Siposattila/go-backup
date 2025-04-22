@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Siposattila/gobkup/backup"
 	"github.com/Siposattila/gobkup/config"
 	"github.com/Siposattila/gobkup/log"
 	"github.com/Siposattila/gobkup/request"
@@ -24,6 +25,7 @@ type client struct {
 	Stream       webtransport.Stream
 	Config       *config.Client
 	BackupConfig *config.Backup
+	Backup       backup.BackupInterface
 }
 
 func NewClient() Client {
@@ -67,6 +69,7 @@ func (c *client) Stop() {
 	log.GetLogger().Normal("Stopping client...")
 	c.Stream.Close()
 	c.Dialer.Close()
+	c.Backup.Stop()
 }
 
 func (c *client) handleStream() {
@@ -92,6 +95,17 @@ func (c *client) handleStream() {
 			}
 			c.BackupConfig = &config
 			log.GetLogger().Success("Got backup config from server!")
+			c.startBackup()
 		}
 	}
+}
+
+func (c *client) startBackup() {
+	c.Backup = backup.NewBackup(
+		c.BackupConfig.WhenToBackup,
+		&c.BackupConfig.WhatToBackup,
+		&c.BackupConfig.Exclude,
+	)
+
+	c.Backup.Backup()
 }

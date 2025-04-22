@@ -9,10 +9,12 @@ require (
 	github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572 // indirect
 	github.com/google/pprof v0.0.0-20230821062121-407c9e7a662f // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
+	github.com/klauspost/compress v1.18.0 // indirect
 	github.com/onsi/ginkgo/v2 v2.12.0 // indirect
 	github.com/quic-go/qpack v0.4.0 // indirect
 	github.com/quic-go/quic-go v0.43.0 // indirect
 	github.com/quic-go/webtransport-go v0.8.0 // indirect
+	github.com/robfig/cron/v3 v3.0.0 // indirect
 	github.com/sasha-s/go-csync v0.0.0-20240107134140-fcbab37b09ad // indirect
 	go.uber.org/mock v0.4.0 // indirect
 	golang.org/x/crypto v0.31.0 // indirect
