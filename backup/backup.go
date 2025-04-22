@@ -48,7 +48,12 @@ func (b *backup) Backup() {
 		log.GetLogger().Normal("Backing up...")
 
 		log.GetLogger().Debug(fmt.Sprintf("%s_backup.zip", time.Now().Format("20060102150405")))
-		c := compression{BackupPath: os.TempDir(), Paths: b.WhatToBackup, Exclude: b.Exclude}
+		c := compression{
+			BackupPath: os.TempDir(),
+			Paths:      b.WhatToBackup,
+			Exclude:    b.Exclude,
+			Store:      getStore(),
+		}
 		c.zipCompress(fmt.Sprintf("%s_backup.zip", time.Now().Format("20060102150405")))
 
 		log.GetLogger().Success("Backup finished successfully!")

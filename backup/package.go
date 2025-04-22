@@ -18,14 +18,16 @@ type compression struct {
 	BackupPath string
 	Paths      *[]string
 	Exclude    *[]string
+	Store      *store
 }
 
 type filterFunc func(fs.DirEntry) bool
 
-func (c *compression) zipCompress(name string) error {
-	var zipFile, err = os.Create(path.Join(c.BackupPath, name))
+func (c *compression) zipCompress(name string) {
+	var fullPath = path.Join(c.BackupPath, name)
+	var zipFile, err = os.Create(fullPath)
 	if err != nil {
-		log.GetLogger().Fatal(err.Error())
+		log.GetLogger().Fatal(err)
 	}
 
 	var writer = zip.NewWriter(zipFile)
@@ -36,46 +38,18 @@ func (c *compression) zipCompress(name string) error {
 			continue
 		}
 	}
+	writer.Close()
 
-	return writer.Close()
+	r, _ := zip.OpenReader(fullPath)
+	if len(r.File) == 0 {
+		log.GetLogger().Warning("Empty archive!")
+		os.Remove(fullPath)
+	}
+	r.Close()
 }
-
-// TODO: restore functionality
-// func (c *compression) zipDecompress(name string) error {
-// 	helper := strings.Split(name, "/")
-// 	directoryName := strings.Split(helper[len(helper)-1], ".")[0]
-// 	if err := os.Mkdir(directoryName, os.ModePerm); err != nil {
-// 		log.GetLogger().Fatal(err.Error())
-// 	}
-
-// 	var reader, err = zip.OpenReader(name)
-// 	if err != nil {
-// 		log.GetLogger().Error(err.Error())
-// 	}
-// 	c.readFiles(directoryName, reader)
-
-// 	return reader.Close()
-// }
-
-// func (c *compression) readFiles(path string, reader *zip.ReadCloser) {
-// 	for _, file := range reader.File {
-// 		log.GetLogger().Debug(file.Name)
-// 		// openedFile, err := file.Open()
-// 		// if err != nil {
-// 		// 	log.GetLogger().Error(err.Error())
-// 		// }
-
-// 		// if _, err := io.
-// 	}
-// }
 
 func (c *compression) writeFiles(fullPath string, files []fs.DirEntry, writer *zip.Writer) {
 	for _, file := range files {
-		var fileWriter, err = writer.Create(file.Name())
-		if err != nil {
-			log.GetLogger().Fatal(err.Error())
-		}
-
 		if file.IsDir() {
 			dir, _ := c.getFiles(path.Join(fullPath, file.Name()))
 			c.writeFiles(fullPath, dir, writer)
@@ -93,11 +67,26 @@ func (c *compression) writeFiles(fullPath string, files []fs.DirEntry, writer *z
 				log.GetLogger().Fatal(openError.Error())
 			}
 
-			if _, err := io.Copy(fileWriter, openedFile); err != nil {
-				log.GetLogger().Fatal(err.Error())
+			checksum := c.Store.checksum(path.Join(fullPath, file.Name()))
+			if contains, index := c.Store.contains(file.Name()); (contains &&
+				checksum != c.Store.Entries[index].Checksum) || !contains {
+				if contains {
+					c.Store.Entries[index].Checksum = checksum
+				} else {
+					c.Store.add(entry{Name: file.Name(), Checksum: checksum})
+				}
+
+				if fileWriter, err := writer.Create(file.Name()); err == nil {
+					if _, err := io.Copy(fileWriter, openedFile); err != nil {
+						log.GetLogger().Fatal(err)
+					}
+				} else {
+					log.GetLogger().Fatal(err)
+				}
 			}
 		}
 	}
+	c.Store.saveStore()
 }
 
 func (c *compression) getFiles(path string) ([]fs.DirEntry, error) {
