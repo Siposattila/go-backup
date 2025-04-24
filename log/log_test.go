@@ -8,7 +8,8 @@ import (
 const TEST_LOG_FILENAME = "test_log.log"
 
 func TestNewLoggerCreatesLog(t *testing.T) {
-	newLogger(TEST_LOG_FILENAME)
+	logger := newLogger(TEST_LOG_FILENAME)
+	logger.Normal("TEST")
 
 	_, err := os.Stat(TEST_LOG_FILENAME)
 	if os.IsNotExist(err) {
