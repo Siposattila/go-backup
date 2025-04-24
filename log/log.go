@@ -6,6 +6,8 @@ import (
 	"log"
 	"os"
 	"reflect"
+
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 type Logger interface {
@@ -19,19 +21,6 @@ type Logger interface {
 
 type logger struct{}
 
-var (
-	reset  = "\033[0m"
-	bold   = "\033[1m"
-	red    = "\033[31m"
-	green  = "\033[32m"
-	yellow = "\033[33m"
-	blue   = "\033[34m"
-	purple = "\033[35m"
-	cyan   = "\033[36m"
-	gray   = "\033[37m"
-	white  = "\033[97m"
-)
-
 var instance Logger
 
 func GetLogger() Logger {
@@ -44,19 +33,17 @@ func GetLogger() Logger {
 
 func newLogger(logFileName string) Logger {
 	logger := &logger{}
-	logFile, err := os.OpenFile(logFileName, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0644)
-	if err != nil {
-		log.Fatalln(err)
+	lumberjackLogger := &lumberjack.Logger{
+		Filename:   logFileName,
+		MaxSize:    5, // MB
+		MaxBackups: 10,
+		MaxAge:     30, // days
 	}
 
-	multi := io.MultiWriter(logFile, os.Stdout)
+	multi := io.MultiWriter(lumberjackLogger, os.Stdout)
 	log.SetOutput(multi)
 
 	return logger
-}
-
-func colorize(color string, label string) string {
-	return color + label + reset
 }
 
 func writeMessageToLog(label string, message any) {
@@ -84,37 +71,37 @@ func writeMessageToLog(label string, message any) {
 
 func (l *logger) Warning(message ...any) {
 	for _, value := range message {
-		writeMessageToLog(colorize(yellow, "[Warning]"), value)
+		writeMessageToLog("[Warning]", value)
 	}
 }
 
 func (l *logger) Error(message ...any) {
 	for _, value := range message {
-		writeMessageToLog(colorize(red, "[Error]"), value)
+		writeMessageToLog("[Error]", value)
 	}
 }
 
 func (l *logger) Fatal(message ...any) {
 	for _, value := range message {
-		writeMessageToLog(colorize(red, "[Fatal] "), value)
+		writeMessageToLog("[Fatal] ", value)
 	}
 	log.Fatal()
 }
 
 func (l *logger) Success(message ...any) {
 	for _, value := range message {
-		writeMessageToLog(colorize(green, "[Success]"), value)
+		writeMessageToLog("[Success]", value)
 	}
 }
 
 func (l *logger) Debug(message ...any) {
 	for _, value := range message {
-		writeMessageToLog(colorize(blue, "[Debug]"), value)
+		writeMessageToLog("[Debug]", value)
 	}
 }
 
 func (l *logger) Normal(message ...any) {
 	for _, value := range message {
-		writeMessageToLog(colorize(white, "[Log]"), value)
+		writeMessageToLog("[Log]", value)
 	}
 }
