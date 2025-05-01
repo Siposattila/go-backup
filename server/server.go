@@ -2,14 +2,19 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"os"
+	"path"
 	"sync"
 	"time"
 
 	"github.com/Siposattila/gobkup/alert"
+	"github.com/Siposattila/gobkup/client"
 	"github.com/Siposattila/gobkup/config"
 	"github.com/Siposattila/gobkup/log"
 	"github.com/Siposattila/gobkup/request"
+	"github.com/Siposattila/gobkup/serializer"
 	"github.com/quic-go/quic-go"
 	"github.com/quic-go/quic-go/http3"
 	"github.com/quic-go/webtransport-go"
@@ -149,14 +154,51 @@ func (s *server) handleStream(stream webtransport.Stream) {
 		}
 
 		switch r.Id {
-		case request.REQUEST_ID_CONFIG:
+		case request.ID_CONFIG:
 			log.GetLogger().Normal(clientId + " sent a request for it's backup config.")
 
 			var backupConfig config.Backup
 			backupConfig = *backupConfig.Get(clientId)
-			request.Write(stream, request.NewResponse(request.REQUEST_ID_CONFIG, backupConfig))
+			request.Write(stream, request.NewResponse(request.ID_CONFIG, backupConfig))
 
 			log.GetLogger().Success("Backup config sent to " + clientId)
+		case request.ID_BACKUP_START:
+			log.GetLogger().Debug("Backup receiving start!")
+
+			info := client.Info{}
+			serializerError := serializer.Json.Serialize([]byte(r.Data), &info)
+			if serializerError != nil {
+				log.GetLogger().Error("Error occured during getting file info.", serializerError.Error())
+			} else {
+				log.GetLogger().Debug(info.Name, info.Size)
+				// TODO: check if enough space is available
+				// if not or after this no more space is available then send alert
+			}
+		case request.ID_BACKUP_CHUNK:
+			log.GetLogger().Debug("Received new chunk!")
+
+			chunk := client.Chunk{}
+			serializerError := serializer.Json.Serialize([]byte(r.Data), &chunk)
+			if serializerError != nil {
+				log.GetLogger().Error("Error occured during getting chunk.", serializerError.Error())
+			} else {
+				log.GetLogger().Debug(chunk.Name, chunk.ChunkName, chunk.Size)
+				s.writeChunk(&chunk)
+				request.Write(stream, request.NewResponse(request.ID_BACKUP_CHUNK_PROCESSED, chunk))
+			}
+		case request.ID_BACKUP_END:
+			log.GetLogger().Debug("Backup receiving ended!")
+
+			info := client.Info{}
+			serializerError := serializer.Json.Serialize([]byte(r.Data), &info)
+			if serializerError != nil {
+				log.GetLogger().Error("Error occured during getting file info.", serializerError.Error())
+			} else {
+				log.GetLogger().Debug(info.Name, info.Size)
+				if err := os.Rename(path.Join(s.Config.BackupPath, fmt.Sprintf(TEMP_FILE, info.Name)), path.Join(s.Config.BackupPath, info.Name)); err != nil {
+					log.GetLogger().Error("Failed to rename temp to normal.")
+				}
+			}
 		}
 	}
 }

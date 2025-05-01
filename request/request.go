@@ -6,7 +6,11 @@ import (
 )
 
 const (
-	REQUEST_ID_CONFIG = 10010
+	ID_CONFIG                 = 10010
+	ID_BACKUP_START           = 10020
+	ID_BACKUP_CHUNK           = 10030
+	ID_BACKUP_CHUNK_PROCESSED = 10040
+	ID_BACKUP_END             = 10050
 )
 
 type Response struct {
