@@ -47,7 +47,6 @@ func (b *backup) Backup(newBackupPath chan string) {
 	case <-timeSignal:
 		log.GetLogger().Normal("Backing up...")
 
-		log.GetLogger().Debug(fmt.Sprintf("%s_backup.zip", time.Now().Format("20060102150405")))
 		c := compression{
 			BackupPath: os.TempDir(),
 			Paths:      b.WhatToBackup,

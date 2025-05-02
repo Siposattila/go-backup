@@ -1,7 +1,6 @@
 package server
 
 import (
-	"errors"
 	"fmt"
 	"os"
 
@@ -12,18 +11,12 @@ import (
 const TEMP_FILE = "%s.temp"
 
 func (s *server) writeChunk(chunk *client.Chunk) {
-	var file *os.File
-	defer file.Close()
-
-	name := fmt.Sprintf(TEMP_FILE, chunk.Name)
-	if _, err := os.Stat(fmt.Sprintf("%s/%s", s.Config.BackupPath, name)); errors.Is(err, os.ErrNotExist) {
-		file, err = os.Create(name)
-		if err != nil {
-			log.GetLogger().Error(err)
-		}
-	} else {
-		file, _ = os.Open(name)
+	name := fmt.Sprintf("%s/%s", s.Config.BackupPath, fmt.Sprintf(TEMP_FILE, chunk.Name))
+	file, err := os.OpenFile(name, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.GetLogger().Error(err)
 	}
 
 	file.Write(chunk.Data)
+	file.Close()
 }

@@ -40,6 +40,11 @@ func NewServer() Server {
 			EnableDatagrams: true,
 			Allow0RTT:       true,
 			MaxIdleTimeout:  time.Duration(30 * time.Second),
+			// TODO: need more research on quic flow control and BDP
+			InitialStreamReceiveWindow:     20 << 20,  // 20 MB
+			InitialConnectionReceiveWindow: 20 << 20,  // 20 MB
+			MaxStreamReceiveWindow:         60 << 20,  // 60 MB
+			MaxConnectionReceiveWindow:     150 << 20, // 150 MB
 		}},
 	}
 	s.getTlsConfig()
@@ -136,26 +141,25 @@ func (s *server) handleStream(stream webtransport.Stream) {
 
 	for {
 		r := request.Request{}
-		n, readError := request.Read(stream, &r)
+		_, readError := request.Read(stream, &r)
 		if readError != nil {
 			source := "unknown"
 			if clientId != "" {
 				source = clientId
 			}
 
-			log.GetLogger().Error("Read error occured during stream handling.", "Client: "+source, readError.Error())
-			s.alertSystem("Error connection suddenly closed for client!\nClient: " + source + "\n" + readError.Error())
+			log.GetLogger().Error("Read error occured during stream handling.", fmt.Sprintf("Client: %s", source), readError.Error())
+			s.alertSystem(fmt.Sprintf("Error connection suddenly closed for client!\nClient: %s\n%s", source, readError.Error()))
 			break
 		}
 
-		log.GetLogger().Debug("Read length: ", n)
 		if clientId == "" {
 			clientId = r.ClientId
 		}
 
 		switch r.Id {
 		case request.ID_CONFIG:
-			log.GetLogger().Normal(clientId + " sent a request for it's backup config.")
+			log.GetLogger().Normal(fmt.Sprintf("%s sent a request for it's backup config.", clientId))
 
 			var backupConfig config.Backup
 			backupConfig = *backupConfig.Get(clientId)
@@ -163,7 +167,7 @@ func (s *server) handleStream(stream webtransport.Stream) {
 
 			log.GetLogger().Success("Backup config sent to " + clientId)
 		case request.ID_BACKUP_START:
-			log.GetLogger().Debug("Backup receiving start!")
+			log.GetLogger().Normal(fmt.Sprintf("%s started sending backup...", clientId))
 
 			info := client.Info{}
 			serializerError := serializer.Json.Serialize([]byte(r.Data), &info)
@@ -175,28 +179,26 @@ func (s *server) handleStream(stream webtransport.Stream) {
 				// if not or after this no more space is available then send alert
 			}
 		case request.ID_BACKUP_CHUNK:
-			log.GetLogger().Debug("Received new chunk!")
-
 			chunk := client.Chunk{}
 			serializerError := serializer.Json.Serialize([]byte(r.Data), &chunk)
 			if serializerError != nil {
 				log.GetLogger().Error("Error occured during getting chunk.", serializerError.Error())
 			} else {
-				log.GetLogger().Debug(chunk.Name, chunk.ChunkName, chunk.Size)
 				s.writeChunk(&chunk)
+				chunk.Data = nil // do not need to send back the chunk data
+
 				request.Write(stream, request.NewResponse(request.ID_BACKUP_CHUNK_PROCESSED, chunk))
 			}
 		case request.ID_BACKUP_END:
-			log.GetLogger().Debug("Backup receiving ended!")
+			log.GetLogger().Success(fmt.Sprintf("Received backup from %s...", clientId))
 
 			info := client.Info{}
 			serializerError := serializer.Json.Serialize([]byte(r.Data), &info)
 			if serializerError != nil {
 				log.GetLogger().Error("Error occured during getting file info.", serializerError.Error())
 			} else {
-				log.GetLogger().Debug(info.Name, info.Size)
 				if err := os.Rename(path.Join(s.Config.BackupPath, fmt.Sprintf(TEMP_FILE, info.Name)), path.Join(s.Config.BackupPath, info.Name)); err != nil {
-					log.GetLogger().Error("Failed to rename temp to normal.")
+					log.GetLogger().Error(err.Error())
 				}
 			}
 		}

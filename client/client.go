@@ -84,13 +84,11 @@ func (c *client) handleStream() {
 
 	for {
 		r := request.Response{}
-		n, readError := request.Read(c.Stream, &r)
+		_, readError := request.Read(c.Stream, &r)
 		if readError != nil {
 			log.GetLogger().Error("Read error occured during stream handling.", readError.Error())
 			break
 		}
-
-		log.GetLogger().Debug("Read length: ", n)
 
 		switch r.Id {
 		case request.ID_CONFIG:
@@ -100,6 +98,7 @@ func (c *client) handleStream() {
 				log.GetLogger().Fatal("Error occured during getting backup config.", serializerError.Error())
 			}
 			c.BackupConfig = &config
+
 			log.GetLogger().Success("Got backup config from server!")
 			c.startBackup()
 		case request.ID_BACKUP_CHUNK_PROCESSED:
@@ -108,8 +107,9 @@ func (c *client) handleStream() {
 			if serializerError != nil {
 				log.GetLogger().Fatal("Error occured during getting chunk info from server.", serializerError.Error())
 			} else {
-				log.GetLogger().Debug(chunk.Name, chunk.ChunkName, chunk.Size)
-				os.Remove(path.Join(CHUNK_TEMP_DIR, chunk.ChunkName))
+				if err := os.Remove(path.Join(CHUNK_TEMP_DIR, chunk.ChunkName)); err != nil {
+					log.GetLogger().Error(err.Error())
+				}
 			}
 		}
 	}
@@ -129,35 +129,35 @@ func (c *client) startBackup() {
 
 func (c *client) handNewBackup() {
 	for {
-		path := <-c.newBackupPath
-		helper := strings.Split(path, "/")
+		newBackupPath := <-c.newBackupPath
+		helper := strings.Split(newBackupPath, "/")
 		backupName := helper[len(helper)-1]
 
-		info, err := os.Stat(path)
+		info, err := os.Stat(newBackupPath)
 		if err != nil {
-			log.GetLogger().Fatal(err)
+			log.GetLogger().Fatal(err.Error())
 		}
 
 		backupInfo := NewInfo(backupName, int(info.Size()))
 		request.Write(c.Stream, request.NewRequest(c.Config.ClientId, request.ID_BACKUP_START, backupInfo))
 
-		log.GetLogger().Debug("Handling backup", path, backupName)
-		n, err := chunkFile(path)
+		n, err := chunkFile(newBackupPath)
 		if err != nil {
-			log.GetLogger().Fatal(err)
+			log.GetLogger().Fatal(err.Error())
 		}
 
 		for partNum := range n {
-			partFile, err := os.Open(fmt.Sprintf(CHUNK_NAME, backupName, partNum))
+			partFile, err := os.Open(path.Join(CHUNK_TEMP_DIR, fmt.Sprintf(CHUNK_NAME, backupName, partNum)))
 			if err != nil {
-				log.GetLogger().Fatal(err)
+				log.GetLogger().Fatal(err.Error())
 			}
 
-			data := make([]byte, 0)
+			data := make([]byte, CHUNK_SIZE)
 			partFile.Read(data)
-			request.Write(c.Stream, request.NewRequest(c.Config.ClientId, request.ID_BACKUP_CHUNK, NewChunk(backupName, partFile.Name(), data)))
+			request.Write(c.Stream, request.NewRequest(c.Config.ClientId, request.ID_BACKUP_CHUNK, NewChunk(backupName, strings.Split(partFile.Name(), "/")[1], data)))
 
 			partFile.Close()
+			time.Sleep(50 * time.Millisecond) // looks like this is necessary because it writes too fast
 		}
 
 		request.Write(c.Stream, request.NewRequest(c.Config.ClientId, request.ID_BACKUP_END, backupInfo))
