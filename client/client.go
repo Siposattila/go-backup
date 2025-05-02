@@ -84,8 +84,7 @@ func (c *client) handleStream() {
 		r := request.Response{}
 		_, readError := request.Read(c.Stream, &r)
 		if readError != nil {
-			log.GetLogger().Error("Read error occured during stream handling.", readError.Error())
-			break
+			log.GetLogger().Fatal("Read error occured during stream handling. Server error occured!", readError.Error())
 		}
 
 		switch r.Id {

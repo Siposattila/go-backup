@@ -12,6 +12,7 @@ import (
 	"github.com/Siposattila/gobkup/alert"
 	"github.com/Siposattila/gobkup/client"
 	"github.com/Siposattila/gobkup/config"
+	"github.com/Siposattila/gobkup/disk"
 	"github.com/Siposattila/gobkup/log"
 	"github.com/Siposattila/gobkup/request"
 	"github.com/Siposattila/gobkup/serializer"
@@ -174,9 +175,11 @@ func (s *server) handleStream(stream webtransport.Stream) {
 			if serializerError != nil {
 				log.GetLogger().Error("Error occured during getting file info.", serializerError.Error())
 			} else {
-				log.GetLogger().Debug(info.Name, info.Size)
-				// TODO: check if enough space is available
-				// if not or after this no more space is available then send alert
+				diskUsage := disk.NewDiskUsage("/")
+				usageAfterBackupTransfer := int(diskUsage.Used()+uint64(info.Size)) * 100 / int(diskUsage.Size())
+				if diskUsage.Usage() >= s.Config.StorageAlertTresholdInPercent || usageAfterBackupTransfer >= s.Config.StorageAlertTresholdInPercent {
+					s.alertSystem(fmt.Sprintf("Warning the storage alert treshold was met! The current usage is: %d%s", usageAfterBackupTransfer, "%"))
+				}
 			}
 		case request.ID_BACKUP_CHUNK:
 			chunk := client.Chunk{}
