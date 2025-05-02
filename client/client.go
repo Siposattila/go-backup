@@ -23,12 +23,12 @@ type Client interface {
 }
 
 type client struct {
-	Dialer        webtransport.Dialer
-	Stream        webtransport.Stream
-	Config        *config.Client
-	BackupConfig  *config.Backup
-	Backup        backup.BackupInterface
-	newBackupPath chan string
+	Dialer               webtransport.Dialer
+	Stream               webtransport.Stream
+	Config               *config.Client
+	BackupConfig         *config.Backup
+	Backup               backup.BackupInterface
+	newBackupPathChannel chan string
 }
 
 func NewClient() Client {
@@ -120,7 +120,7 @@ func (c *client) startBackup() {
 		&c.BackupConfig.Exclude,
 	)
 
-	c.newBackupPath = make(chan string)
-	go c.Backup.Backup(c.newBackupPath)
+	c.newBackupPathChannel = make(chan string)
+	go c.Backup.Backup(c.newBackupPathChannel)
 	go c.handNewBackup()
 }

@@ -10,7 +10,7 @@ import (
 )
 
 type BackupInterface interface {
-	Backup(newBackupPath chan string)
+	Backup(newBackupPath chan<- string)
 	Stop()
 }
 
@@ -40,7 +40,7 @@ func NewBackup(cronExpression string, whatToBackup *[]string, exclude *[]string)
 	return &newBackup
 }
 
-func (b *backup) Backup(newBackupPath chan string) {
+func (b *backup) Backup(newBackupPathChannel chan<- string) {
 	var timeSignal = time.After(time.Until(b.Cron.Next(time.Now())))
 	log.GetLogger().Success("Next backup will be at: " + b.Cron.Next(time.Now()).Format("15:04:05"))
 	select {
@@ -57,11 +57,10 @@ func (b *backup) Backup(newBackupPath chan string) {
 
 		log.GetLogger().Success("Backup finished successfully!")
 		if zipPath != "" {
-			newBackupPath <- zipPath
+			newBackupPathChannel <- zipPath
 		}
 
-		newBackupPath = make(chan string)
-		b.Backup(newBackupPath)
+		b.Backup(newBackupPathChannel)
 	case <-b.stopChannel:
 		log.GetLogger().Normal("Stopping backup process...")
 	}

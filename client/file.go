@@ -93,7 +93,7 @@ func chunkFile(name string) (int, error) {
 
 func (c *client) handNewBackup() {
 	for {
-		newBackupPath := <-c.newBackupPath
+		newBackupPath := <-c.newBackupPathChannel
 		helper := strings.Split(newBackupPath, "/")
 		backupName := helper[len(helper)-1]
 
@@ -104,6 +104,7 @@ func (c *client) handNewBackup() {
 
 		backupInfo := NewInfo(backupName, int(info.Size()))
 		request.Write(c.Stream, request.NewRequest(c.Config.ClientId, request.ID_BACKUP_START, backupInfo))
+		time.Sleep(10 * time.Millisecond) // looks like this is necessary because it writes too fast
 
 		n, err := chunkFile(newBackupPath)
 		if err != nil {
@@ -121,7 +122,7 @@ func (c *client) handNewBackup() {
 			request.Write(c.Stream, request.NewRequest(c.Config.ClientId, request.ID_BACKUP_CHUNK, NewChunk(backupName, strings.Split(partFile.Name(), "/")[1], data)))
 
 			partFile.Close()
-			time.Sleep(50 * time.Millisecond) // looks like this is necessary because it writes too fast
+			time.Sleep(10 * time.Millisecond) // looks like this is necessary because it writes too fast
 		}
 
 		request.Write(c.Stream, request.NewRequest(c.Config.ClientId, request.ID_BACKUP_END, backupInfo))

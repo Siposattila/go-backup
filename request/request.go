@@ -59,15 +59,20 @@ func Write[T *Request | *Response](stream webtransport.Stream, data T) (int, err
 
 func Read[T *Request | *Response](stream webtransport.Stream, data T) (int, error) {
 	buffer := make([]byte, 50<<10) // 50 KB
-	n, readError := stream.Read(buffer)
-	if readError != nil {
-		return 0, readError
+	totalRead := 0
+	isFull := false
+	for !isFull {
+		n, readError := stream.Read(buffer[totalRead:])
+		if readError != nil {
+			return 0, readError
+		}
+
+		totalRead += n
+		serializerError := serializer.Json.Serialize(buffer[:totalRead], data)
+		if serializerError == nil {
+			isFull = true
+		}
 	}
 
-	serializerError := serializer.Json.Serialize(buffer[:n], data)
-	if serializerError != nil {
-		return 0, serializerError
-	}
-
-	return n, nil
+	return totalRead, nil
 }
