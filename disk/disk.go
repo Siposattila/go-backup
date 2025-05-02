@@ -9,6 +9,7 @@ type DiskUsage struct {
 func NewDiskUsage(volumePath string) *DiskUsage {
 	var stat syscall.Statfs_t
 	syscall.Statfs(volumePath, &stat)
+
 	return &DiskUsage{&stat}
 }
 

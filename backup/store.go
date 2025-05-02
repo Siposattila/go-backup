@@ -30,7 +30,7 @@ func (s *store) checksum(name string) string {
 	file, _ := os.Open(name)
 	hash := sha256.New()
 	if _, err := goio.Copy(hash, file); err != nil {
-		log.GetLogger().Fatal(err)
+		log.GetLogger().Fatal(err.Error())
 	}
 
 	return fmt.Sprintf("%x", hash.Sum(nil))
@@ -55,7 +55,7 @@ func (s *store) saveStore() {
 	s.LastBackup = time.Now().Format("2006-01-02")
 	buffer, err := serializer.Json.Deserialize(s)
 	if err != nil {
-		log.GetLogger().Fatal(err)
+		log.GetLogger().Fatal(err.Error())
 	}
 
 	io.WriteFile(".", CHECKSUM_STORE_FILENAME, buffer)

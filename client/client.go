@@ -3,6 +3,8 @@ package client
 import (
 	"context"
 	"net/http"
+	"os"
+	"path"
 	"sync"
 	"time"
 
@@ -21,11 +23,12 @@ type Client interface {
 }
 
 type client struct {
-	Dialer       webtransport.Dialer
-	Stream       webtransport.Stream
-	Config       *config.Client
-	BackupConfig *config.Backup
-	Backup       backup.BackupInterface
+	Dialer               webtransport.Dialer
+	Stream               webtransport.Stream
+	Config               *config.Client
+	BackupConfig         *config.Backup
+	Backup               backup.BackupInterface
+	newBackupPathChannel chan string
 }
 
 func NewClient() Client {
@@ -43,6 +46,7 @@ func NewClient() Client {
 
 func (c *client) Start(clientWg *sync.WaitGroup) {
 	log.GetLogger().Normal("Starting up client...")
+	clientWg.Add(1)
 
 	h := http.Header{}
 	h.Add("Authorization", "Basic "+c.Config.Token)
@@ -62,7 +66,7 @@ func (c *client) Start(clientWg *sync.WaitGroup) {
 	c.Stream = stream
 
 	log.GetLogger().Success("Client is up and running! Ready to communicate with the server!")
-	c.handleStream()
+	go c.handleStream()
 }
 
 func (c *client) Stop() {
@@ -74,28 +78,36 @@ func (c *client) Stop() {
 
 func (c *client) handleStream() {
 	log.GetLogger().Normal("Trying to request backup config from server...")
-	request.Write(c.Stream, request.NewRequest(c.Config.ClientId, request.REQUEST_ID_CONFIG, ""))
+	request.Write(c.Stream, request.NewRequest(c.Config.ClientId, request.ID_CONFIG, ""))
 
 	for {
-		resp := request.Response{}
-		n, readError := request.Read(c.Stream, &resp)
+		r := request.Response{}
+		_, readError := request.Read(c.Stream, &r)
 		if readError != nil {
-			log.GetLogger().Error("Read error occured during stream handling.", readError.Error())
-			break
+			log.GetLogger().Fatal("Read error occured during stream handling. Server error occured!", readError.Error())
 		}
 
-		log.GetLogger().Debug("Read length: ", n)
-
-		switch resp.Id {
-		case request.REQUEST_ID_CONFIG:
+		switch r.Id {
+		case request.ID_CONFIG:
 			config := config.Backup{}
-			serializerError := serializer.Json.Serialize([]byte(resp.Data), &config)
+			serializerError := serializer.Json.Serialize([]byte(r.Data), &config)
 			if serializerError != nil {
 				log.GetLogger().Fatal("Error occured during getting backup config.", serializerError.Error())
 			}
 			c.BackupConfig = &config
+
 			log.GetLogger().Success("Got backup config from server!")
 			c.startBackup()
+		case request.ID_BACKUP_CHUNK_PROCESSED:
+			chunk := Chunk{}
+			serializerError := serializer.Json.Serialize([]byte(r.Data), &chunk)
+			if serializerError != nil {
+				log.GetLogger().Fatal("Error occured during getting chunk info from server.", serializerError.Error())
+			} else {
+				if err := os.Remove(path.Join(CHUNK_TEMP_DIR, chunk.ChunkName)); err != nil {
+					log.GetLogger().Error(err.Error())
+				}
+			}
 		}
 	}
 }
@@ -107,5 +119,7 @@ func (c *client) startBackup() {
 		&c.BackupConfig.Exclude,
 	)
 
-	c.Backup.Backup()
+	c.newBackupPathChannel = make(chan string)
+	go c.Backup.Backup(c.newBackupPathChannel)
+	go c.handNewBackup()
 }

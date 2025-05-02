@@ -3,3 +3,4 @@ gobkup.log
 *_backup.*
 checksum_store.json
 old_checksum_store.json
+chunk_temp

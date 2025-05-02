@@ -6,7 +6,11 @@ import (
 )
 
 const (
-	REQUEST_ID_CONFIG = 10010
+	ID_CONFIG                 = 10010
+	ID_BACKUP_START           = 10020
+	ID_BACKUP_CHUNK           = 10030
+	ID_BACKUP_CHUNK_PROCESSED = 10040
+	ID_BACKUP_END             = 10050
 )
 
 type Response struct {
@@ -54,16 +58,21 @@ func Write[T *Request | *Response](stream webtransport.Stream, data T) (int, err
 }
 
 func Read[T *Request | *Response](stream webtransport.Stream, data T) (int, error) {
-	buffer := make([]byte, 1024)
-	n, readError := stream.Read(buffer)
-	if readError != nil {
-		return 0, readError
+	buffer := make([]byte, 50<<10) // 50 KB
+	totalRead := 0
+	isFull := false
+	for !isFull {
+		n, readError := stream.Read(buffer[totalRead:])
+		if readError != nil {
+			return 0, readError
+		}
+
+		totalRead += n
+		serializerError := serializer.Json.Serialize(buffer[:totalRead], data)
+		if serializerError == nil {
+			isFull = true
+		}
 	}
 
-	serializerError := serializer.Json.Serialize(buffer[:n], data)
-	if serializerError != nil {
-		return 0, serializerError
-	}
-
-	return n, nil
+	return totalRead, nil
 }

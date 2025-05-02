@@ -23,11 +23,11 @@ type compression struct {
 
 type filterFunc func(fs.DirEntry) bool
 
-func (c *compression) zipCompress(name string) {
-	var fullPath = path.Join(c.BackupPath, name)
-	var zipFile, err = os.Create(fullPath)
+func (c *compression) zipCompress(name string) (zipPath string) {
+	zipPath = path.Join(c.BackupPath, name)
+	var zipFile, err = os.Create(zipPath)
 	if err != nil {
-		log.GetLogger().Fatal(err)
+		log.GetLogger().Fatal(err.Error())
 	}
 
 	var writer = zip.NewWriter(zipFile)
@@ -40,12 +40,16 @@ func (c *compression) zipCompress(name string) {
 	}
 	writer.Close()
 
-	r, _ := zip.OpenReader(fullPath)
+	r, _ := zip.OpenReader(zipPath)
+	defer r.Close()
 	if len(r.File) == 0 {
 		log.GetLogger().Warning("Empty archive!")
-		os.Remove(fullPath)
+		os.Remove(zipPath)
+
+		return ""
 	}
-	r.Close()
+
+	return
 }
 
 func (c *compression) writeFiles(fullPath string, files []fs.DirEntry, writer *zip.Writer) {
@@ -78,10 +82,10 @@ func (c *compression) writeFiles(fullPath string, files []fs.DirEntry, writer *z
 
 				if fileWriter, err := writer.Create(file.Name()); err == nil {
 					if _, err := io.Copy(fileWriter, openedFile); err != nil {
-						log.GetLogger().Fatal(err)
+						log.GetLogger().Fatal(err.Error())
 					}
 				} else {
-					log.GetLogger().Fatal(err)
+					log.GetLogger().Fatal(err.Error())
 				}
 			}
 		}
