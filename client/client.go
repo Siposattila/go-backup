@@ -2,11 +2,9 @@ package client
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"os"
 	"path"
-	"strings"
 	"sync"
 	"time"
 
@@ -125,41 +123,4 @@ func (c *client) startBackup() {
 	c.newBackupPath = make(chan string)
 	go c.Backup.Backup(c.newBackupPath)
 	go c.handNewBackup()
-}
-
-func (c *client) handNewBackup() {
-	for {
-		newBackupPath := <-c.newBackupPath
-		helper := strings.Split(newBackupPath, "/")
-		backupName := helper[len(helper)-1]
-
-		info, err := os.Stat(newBackupPath)
-		if err != nil {
-			log.GetLogger().Fatal(err.Error())
-		}
-
-		backupInfo := NewInfo(backupName, int(info.Size()))
-		request.Write(c.Stream, request.NewRequest(c.Config.ClientId, request.ID_BACKUP_START, backupInfo))
-
-		n, err := chunkFile(newBackupPath)
-		if err != nil {
-			log.GetLogger().Fatal(err.Error())
-		}
-
-		for partNum := range n {
-			partFile, err := os.Open(path.Join(CHUNK_TEMP_DIR, fmt.Sprintf(CHUNK_NAME, backupName, partNum)))
-			if err != nil {
-				log.GetLogger().Fatal(err.Error())
-			}
-
-			data := make([]byte, CHUNK_SIZE)
-			partFile.Read(data)
-			request.Write(c.Stream, request.NewRequest(c.Config.ClientId, request.ID_BACKUP_CHUNK, NewChunk(backupName, strings.Split(partFile.Name(), "/")[1], data)))
-
-			partFile.Close()
-			time.Sleep(50 * time.Millisecond) // looks like this is necessary because it writes too fast
-		}
-
-		request.Write(c.Stream, request.NewRequest(c.Config.ClientId, request.ID_BACKUP_END, backupInfo))
-	}
 }
