@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Siposattila/gobkup/log"
-	"github.com/Siposattila/gobkup/request"
+	"github.com/Siposattila/go-backup/log"
+	"github.com/Siposattila/go-backup/request"
 )
 
 const (

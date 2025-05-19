@@ -3,8 +3,8 @@ package main
 import (
 	"flag"
 
-	"github.com/Siposattila/gobkup/dealer"
-	"github.com/Siposattila/gobkup/log"
+	"github.com/Siposattila/go-backup/dealer"
+	"github.com/Siposattila/go-backup/log"
 )
 
 func main() {

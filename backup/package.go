@@ -10,7 +10,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/Siposattila/gobkup/log"
+	"github.com/Siposattila/go-backup/log"
 	"github.com/klauspost/compress/zip"
 )
 

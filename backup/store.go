@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Siposattila/gobkup/io"
-	"github.com/Siposattila/gobkup/log"
-	"github.com/Siposattila/gobkup/serializer"
+	"github.com/Siposattila/go-backup/io"
+	"github.com/Siposattila/go-backup/log"
+	"github.com/Siposattila/go-backup/serializer"
 )
 
 const CHECKSUM_STORE_FILENAME = "checksum_store.json"

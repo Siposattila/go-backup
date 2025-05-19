@@ -1,8 +1,8 @@
 package config
 
 import (
-	"github.com/Siposattila/gobkup/io"
-	"github.com/Siposattila/gobkup/log"
+	"github.com/Siposattila/go-backup/io"
+	"github.com/Siposattila/go-backup/log"
 )
 
 type Server struct {

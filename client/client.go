@@ -8,11 +8,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Siposattila/gobkup/backup"
-	"github.com/Siposattila/gobkup/config"
-	"github.com/Siposattila/gobkup/log"
-	"github.com/Siposattila/gobkup/request"
-	"github.com/Siposattila/gobkup/serializer"
+	"github.com/Siposattila/go-backup/backup"
+	"github.com/Siposattila/go-backup/config"
+	"github.com/Siposattila/go-backup/log"
+	"github.com/Siposattila/go-backup/request"
+	"github.com/Siposattila/go-backup/serializer"
 	"github.com/quic-go/quic-go"
 	"github.com/quic-go/webtransport-go"
 )

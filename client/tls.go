@@ -4,8 +4,8 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 
-	"github.com/Siposattila/gobkup/cert"
-	"github.com/Siposattila/gobkup/log"
+	"github.com/Siposattila/go-backup/cert"
+	"github.com/Siposattila/go-backup/log"
 )
 
 func (c *client) getTlsConfig() {
