@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Siposattila/gobkup/client"
-	"github.com/Siposattila/gobkup/log"
+	"github.com/Siposattila/go-backup/client"
+	"github.com/Siposattila/go-backup/log"
 )
 
 const TEMP_FILE = "%s.temp"

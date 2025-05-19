@@ -6,8 +6,8 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/Siposattila/gobkup/client"
-	"github.com/Siposattila/gobkup/server"
+	"github.com/Siposattila/go-backup/client"
+	"github.com/Siposattila/go-backup/server"
 )
 
 type dealer interface {

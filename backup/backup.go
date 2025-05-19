@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/Siposattila/gobkup/log"
+	"github.com/Siposattila/go-backup/log"
 	"github.com/robfig/cron/v3"
 )
 

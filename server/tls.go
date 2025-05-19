@@ -3,8 +3,8 @@ package server
 import (
 	"crypto/tls"
 
-	"github.com/Siposattila/gobkup/cert"
-	"github.com/Siposattila/gobkup/log"
+	"github.com/Siposattila/go-backup/cert"
+	"github.com/Siposattila/go-backup/log"
 )
 
 func (s *server) getTlsConfig() {

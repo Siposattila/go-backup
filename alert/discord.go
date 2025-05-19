@@ -3,7 +3,7 @@ package alert
 import (
 	"context"
 
-	"github.com/Siposattila/gobkup/log"
+	"github.com/Siposattila/go-backup/log"
 	"github.com/disgoorg/disgo"
 	discordgo "github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/webhook"

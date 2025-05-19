@@ -1,7 +1,7 @@
 package request
 
 import (
-	"github.com/Siposattila/gobkup/serializer"
+	"github.com/Siposattila/go-backup/serializer"
 	"github.com/quic-go/webtransport-go"
 )
 

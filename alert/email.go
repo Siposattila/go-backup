@@ -1,7 +1,7 @@
 package alert
 
 import (
-	"github.com/Siposattila/gobkup/log"
+	"github.com/Siposattila/go-backup/log"
 	"gopkg.in/gomail.v2"
 )
 

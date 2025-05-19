@@ -5,7 +5,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/Siposattila/gobkup/log"
+	"github.com/Siposattila/go-backup/log"
 )
 
 func CreateDir(path string) {
