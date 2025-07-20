@@ -1,6 +1,6 @@
 module github.com/Siposattila/go-backup
 
-go 1.23.5
+go 1.24.5
 
 require (
 	github.com/disgoorg/disgo v0.18.15
