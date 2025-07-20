@@ -4,3 +4,5 @@ gobkup.log
 checksum_store.json
 old_checksum_store.json
 chunk_temp
+build/
+build-errors.log
