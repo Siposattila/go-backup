@@ -1,7 +1,7 @@
 APP_NAME := go-backup
 BUILD_DIR := build
 
-.PHONY: all tidy watch build clean
+.PHONY: all tidy watch watch_server watch_client build clean
 
 all: build
 
@@ -17,9 +17,9 @@ build:
 	@echo "Building $(APP_NAME)..."
 	@mkdir -p $(BUILD_DIR)
 
-	# @GOOS=windows GOARCH=amd64 go build -o $(BUILD_DIR)/$(APP_NAME)-windows-amd64.exe .
-	# @GOOS=darwin GOARCH=amd64 go build -o $(BUILD_DIR)/$(APP_NAME)-darwin-amd64 .
-	# @GOOS=darwin GOARCH=arm64 go build -o $(BUILD_DIR)/$(APP_NAME)-darwin-arm64 .
+	@# @GOOS=windows GOARCH=amd64 go build -o $(BUILD_DIR)/$(APP_NAME)-windows-amd64.exe .
+	@# @GOOS=darwin GOARCH=amd64 go build -o $(BUILD_DIR)/$(APP_NAME)-darwin-amd64 .
+	@# @GOOS=darwin GOARCH=arm64 go build -o $(BUILD_DIR)/$(APP_NAME)-darwin-arm64 .
 	@GOOS=linux GOARCH=amd64 go build -o $(BUILD_DIR)/$(APP_NAME)-linux-amd64 .
 	@go build -o $(BUILD_DIR)/$(APP_NAME)
 
@@ -41,4 +41,9 @@ watch:
 	fi \
 
 	@echo "Watching..."
-	@air
+
+watch_server: watch
+	@air -c .air_server.toml
+
+watch_client: watch
+	@air -c .air_client.toml
