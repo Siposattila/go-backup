@@ -71,14 +71,20 @@ func (c *client) Start(clientWg *sync.WaitGroup) {
 
 func (c *client) Stop() {
 	log.GetLogger().Normal("Stopping client...")
-	c.Stream.Close()
-	c.Dialer.Close()
+	if err := c.Stream.Close(); err != nil {
+		log.GetLogger().Error(err.Error())
+	}
+	if err := c.Dialer.Close(); err != nil {
+		log.GetLogger().Error(err.Error())
+	}
 	c.Backup.Stop()
 }
 
 func (c *client) handleStream() {
 	log.GetLogger().Normal("Trying to request backup config from server...")
-	request.Write(c.Stream, request.NewRequest(c.Config.ClientId, request.ID_CONFIG, ""))
+	if _, err := request.Write(c.Stream, request.NewRequest(c.Config.ClientId, request.ID_CONFIG, "")); err != nil {
+		log.GetLogger().Fatal(err.Error())
+	}
 
 	for {
 		r := request.Response{}

@@ -50,14 +50,15 @@ func NewChunk(name string, chunkName string, data []byte) *Chunk {
 
 func chunkFile(name string) (int, error) {
 	if _, err := os.Stat(CHUNK_TEMP_DIR); errors.Is(err, os.ErrNotExist) {
-		os.Mkdir(CHUNK_TEMP_DIR, 0777)
+		if err := os.Mkdir(CHUNK_TEMP_DIR, 0777); err != nil {
+			log.GetLogger().Fatal(err.Error())
+		}
 	}
 
 	file, err := os.Open(name)
 	if err != nil {
 		return 0, err
 	}
-	defer file.Close()
 
 	buffer := make([]byte, CHUNK_SIZE)
 	baseName := filepath.Base(name)
@@ -80,12 +81,20 @@ func chunkFile(name string) (int, error) {
 
 		_, writeErr := partFile.Write(buffer[:n])
 		if writeErr != nil {
-			partFile.Close()
+			if err := partFile.Close(); err != nil {
+				log.GetLogger().Error(err.Error())
+			}
 			return 0, writeErr
 		}
 
-		partFile.Close()
+		if err := partFile.Close(); err != nil {
+			log.GetLogger().Error(err.Error())
+		}
 		partNum++
+	}
+
+	if err := file.Close(); err != nil {
+		log.GetLogger().Error(err.Error())
 	}
 
 	return partNum, nil
@@ -103,7 +112,9 @@ func (c *client) handNewBackup() {
 		}
 
 		backupInfo := NewInfo(backupName, int(info.Size()))
-		request.Write(c.Stream, request.NewRequest(c.Config.ClientId, request.ID_BACKUP_START, backupInfo))
+		if _, err := request.Write(c.Stream, request.NewRequest(c.Config.ClientId, request.ID_BACKUP_START, backupInfo)); err != nil {
+			log.GetLogger().Fatal(err.Error())
+		}
 		time.Sleep(10 * time.Millisecond) // looks like this is necessary because it writes too fast
 
 		n, err := chunkFile(newBackupPath)
@@ -118,13 +129,21 @@ func (c *client) handNewBackup() {
 			}
 
 			data := make([]byte, CHUNK_SIZE)
-			partFile.Read(data)
-			request.Write(c.Stream, request.NewRequest(c.Config.ClientId, request.ID_BACKUP_CHUNK, NewChunk(backupName, strings.Split(partFile.Name(), "/")[1], data)))
+			if _, err := partFile.Read(data); err != nil {
+				log.GetLogger().Fatal(err.Error())
+			}
+			if _, err := request.Write(c.Stream, request.NewRequest(c.Config.ClientId, request.ID_BACKUP_CHUNK, NewChunk(backupName, strings.Split(partFile.Name(), "/")[1], data))); err != nil {
+				log.GetLogger().Fatal(err.Error())
+			}
 
-			partFile.Close()
+			if err := partFile.Close(); err != nil {
+				log.GetLogger().Error(err.Error())
+			}
 			time.Sleep(10 * time.Millisecond) // looks like this is necessary because it writes too fast
 		}
 
-		request.Write(c.Stream, request.NewRequest(c.Config.ClientId, request.ID_BACKUP_END, backupInfo))
+		if _, err := request.Write(c.Stream, request.NewRequest(c.Config.ClientId, request.ID_BACKUP_END, backupInfo)); err != nil {
+			log.GetLogger().Fatal(err.Error())
+		}
 	}
 }

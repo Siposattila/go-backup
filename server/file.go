@@ -17,6 +17,10 @@ func (s *server) writeChunk(chunk *client.Chunk) {
 		log.GetLogger().Error(err)
 	}
 
-	file.Write(chunk.Data)
-	file.Close()
+	if _, err := file.Write(chunk.Data); err != nil {
+		log.GetLogger().Fatal(err.Error())
+	}
+	if err := file.Close(); err != nil {
+		log.GetLogger().Error(err.Error())
+	}
 }

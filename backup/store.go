@@ -45,7 +45,9 @@ func getStore() (s *store) {
 		if err := serializer.Json.Serialize(raw, s); err != nil {
 			log.GetLogger().Warning("Checksum file was corrupted not able to serialize it!")
 		}
-		os.Rename(CHECKSUM_STORE_FILENAME, OLD_CHECKSUM_STORE_FILENAME)
+		if err := os.Rename(CHECKSUM_STORE_FILENAME, OLD_CHECKSUM_STORE_FILENAME); err != nil {
+			log.GetLogger().Error(err.Error())
+		}
 	}
 
 	return s
@@ -77,5 +79,5 @@ func (s *store) contains(name string) (bool, int) {
 }
 
 func (s *store) trimName(name string) string {
-	return strings.Trim(name, "<>:/|?*';!@#$%^&*()[]{}=+~`,.\t\n\r ")
+	return strings.Trim(name, "<>:/|?*';!@#$%^&()[]{}=+~`,.\t\n\r ")
 }

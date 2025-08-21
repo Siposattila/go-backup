@@ -88,7 +88,9 @@ func (s *server) Start(serverWg *sync.WaitGroup) {
 
 func (s *server) Stop() {
 	log.GetLogger().Normal("Stopping server...")
-	s.Transport.Close()
+	if err := s.Transport.Close(); err != nil {
+		log.GetLogger().Error(err.Error())
+	}
 
 	if s.Discord != nil {
 		s.Discord.Stop()
@@ -137,7 +139,6 @@ func (s *server) setupEndpoint() {
 }
 
 func (s *server) handleStream(stream webtransport.Stream) {
-	defer stream.Close()
 	var clientId string
 
 	for {
@@ -164,7 +165,9 @@ func (s *server) handleStream(stream webtransport.Stream) {
 
 			var backupConfig config.Backup
 			backupConfig = *backupConfig.Get(clientId)
-			request.Write(stream, request.NewResponse(request.ID_CONFIG, backupConfig))
+			if _, err := request.Write(stream, request.NewResponse(request.ID_CONFIG, backupConfig)); err != nil {
+				log.GetLogger().Error(err.Error())
+			}
 
 			log.GetLogger().Success("Backup config sent to " + clientId)
 		case request.ID_BACKUP_START:
@@ -190,7 +193,9 @@ func (s *server) handleStream(stream webtransport.Stream) {
 				s.writeChunk(&chunk)
 				chunk.Data = nil // do not need to send back the chunk data
 
-				request.Write(stream, request.NewResponse(request.ID_BACKUP_CHUNK_PROCESSED, chunk))
+				if _, err := request.Write(stream, request.NewResponse(request.ID_BACKUP_CHUNK_PROCESSED, chunk)); err != nil {
+					log.GetLogger().Error(err.Error())
+				}
 			}
 		case request.ID_BACKUP_END:
 			log.GetLogger().Success(fmt.Sprintf("Received backup from %s...", clientId))
@@ -205,5 +210,9 @@ func (s *server) handleStream(stream webtransport.Stream) {
 				}
 			}
 		}
+	}
+
+	if err := stream.Close(); err != nil {
+		log.GetLogger().Fatal(err.Error())
 	}
 }

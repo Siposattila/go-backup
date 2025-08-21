@@ -38,15 +38,21 @@ func (c *compression) zipCompress(name string) (zipPath string) {
 			continue
 		}
 	}
-	writer.Close()
+	if err := writer.Close(); err != nil {
+		log.GetLogger().Fatal(err.Error())
+	}
 
 	r, _ := zip.OpenReader(zipPath)
-	defer r.Close()
 	if len(r.File) == 0 {
 		log.GetLogger().Warning("Empty archive!")
-		os.Remove(zipPath)
+		if err := os.Remove(zipPath); err != nil {
+			log.GetLogger().Error(err.Error())
+		}
 
-		return ""
+		zipPath = ""
+	}
+	if err := r.Close(); err != nil {
+		log.GetLogger().Fatal(err.Error())
 	}
 
 	return

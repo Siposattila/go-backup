@@ -16,5 +16,7 @@ func TestNewLoggerCreatesLog(t *testing.T) {
 		t.Fatalf(`NewLogger("%s") should create a log file.`, TEST_LOG_FILENAME)
 	}
 
-	os.Remove(TEST_LOG_FILENAME)
+	if err := os.Remove(TEST_LOG_FILENAME); err != nil {
+		panic(err.Error())
+	}
 }

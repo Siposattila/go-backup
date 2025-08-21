@@ -1,6 +1,10 @@
 package disk
 
-import "syscall"
+import (
+	"syscall"
+
+	"github.com/Siposattila/go-backup/log"
+)
 
 type DiskUsage struct {
 	stat *syscall.Statfs_t
@@ -8,7 +12,9 @@ type DiskUsage struct {
 
 func NewDiskUsage(volumePath string) *DiskUsage {
 	var stat syscall.Statfs_t
-	syscall.Statfs(volumePath, &stat)
+	if err := syscall.Statfs(volumePath, &stat); err != nil {
+		log.GetLogger().Fatal(err.Error())
+	}
 
 	return &DiskUsage{&stat}
 }
