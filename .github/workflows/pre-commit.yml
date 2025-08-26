@@ -9,4 +9,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: install golangci-lint
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s v2.4.0
+        shell: bash
+
       - uses: pre-commit/action@v3.0.1
