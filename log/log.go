@@ -10,6 +10,15 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
+const (
+	WARNING = "[Warning]"
+	ERROR   = "[Error]"
+	FATAL   = "[Fatal]"
+	SUCCESS = "[Success]"
+	DEBUG   = "[Debug]"
+	NORMAL  = "[Log]"
+)
+
 type Logger interface {
 	Warning(message ...any)
 	Error(message ...any)
@@ -46,62 +55,59 @@ func newLogger(logFileName string) Logger {
 	return logger
 }
 
-func writeMessageToLog(label string, message any) {
-	var resultMessage string
-	value := reflect.ValueOf(message)
-	switch value.Kind() {
-	case reflect.String:
-		resultMessage = value.String()
-	case reflect.Bool:
-		resultMessage = fmt.Sprintf("%t", value.Bool())
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		resultMessage = fmt.Sprintf("%d", value.Int())
-	case reflect.Float32, reflect.Float64:
-		resultMessage = fmt.Sprintf("%f", value.Float())
-	case reflect.Uint32, reflect.Uint64:
-		resultMessage = fmt.Sprintf("%d", value.Uint())
-	case reflect.Slice:
-		if value.Type() == reflect.TypeOf([]byte(nil)) {
-			resultMessage = string(value.Bytes()[:])
+func writeMessageToLog(label string, message string) {
+	log.Printf("%s %s", label, message)
+}
+
+func processMessages(label string, message ...any) {
+	var logMessage string
+	for i, v := range message {
+		if i > 0 {
+			logMessage += "\n"
+		}
+
+		value := reflect.ValueOf(v)
+		switch value.Kind() {
+		case reflect.String:
+			logMessage += value.String()
+		case reflect.Bool:
+			logMessage += fmt.Sprintf("%t", value.Bool())
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			logMessage += fmt.Sprintf("%d", value.Int())
+		case reflect.Float32, reflect.Float64:
+			logMessage += fmt.Sprintf("%f", value.Float())
+		case reflect.Uint32, reflect.Uint64:
+			logMessage += fmt.Sprintf("%d", value.Uint())
+		case reflect.Slice:
+			if value.Type() == reflect.TypeOf([]byte(nil)) {
+				logMessage += string(value.Bytes()[:])
+			}
 		}
 	}
-
-	log.Println(label + " " + resultMessage)
+	writeMessageToLog(label, logMessage)
 }
 
 func (l *logger) Warning(message ...any) {
-	for _, value := range message {
-		writeMessageToLog("[Warning]", value)
-	}
+	processMessages(WARNING, message...)
 }
 
 func (l *logger) Error(message ...any) {
-	for _, value := range message {
-		writeMessageToLog("[Error]", value)
-	}
+	processMessages(ERROR, message...)
 }
 
 func (l *logger) Fatal(message ...any) {
-	for _, value := range message {
-		writeMessageToLog("[Fatal] ", value)
-	}
+	processMessages(FATAL, message...)
 	log.Fatal()
 }
 
 func (l *logger) Success(message ...any) {
-	for _, value := range message {
-		writeMessageToLog("[Success]", value)
-	}
+	processMessages(SUCCESS, message...)
 }
 
 func (l *logger) Debug(message ...any) {
-	for _, value := range message {
-		writeMessageToLog("[Debug]", value)
-	}
+	processMessages(DEBUG, message...)
 }
 
 func (l *logger) Normal(message ...any) {
-	for _, value := range message {
-		writeMessageToLog("[Log]", value)
-	}
+	processMessages(NORMAL, message...)
 }
