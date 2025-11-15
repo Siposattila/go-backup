@@ -10,11 +10,12 @@ import (
 
 	"github.com/Siposattila/go-backup/backup"
 	"github.com/Siposattila/go-backup/config"
+	"github.com/Siposattila/go-backup/generatedproto"
 	"github.com/Siposattila/go-backup/log"
 	"github.com/Siposattila/go-backup/request"
-	"github.com/Siposattila/go-backup/serializer"
 	"github.com/quic-go/quic-go"
 	"github.com/quic-go/webtransport-go"
+	"google.golang.org/protobuf/proto"
 )
 
 type Client interface {
@@ -25,15 +26,15 @@ type Client interface {
 type client struct {
 	Dialer               webtransport.Dialer
 	Stream               webtransport.Stream
-	Config               *config.Client
-	BackupConfig         *config.Backup
+	Config               *generatedproto.Client
+	BackupConfig         *generatedproto.Backup
 	Backup               backup.BackupInterface
 	newBackupPathChannel chan string
 }
 
 func NewClient() Client {
 	var c client
-	c.Config = c.Config.Get()
+	c.Config = config.GetClientConfig()
 
 	c.Dialer = webtransport.Dialer{QUICConfig: &quic.Config{
 		KeepAlivePeriod: time.Duration(25 * time.Second),
@@ -82,36 +83,40 @@ func (c *client) Stop() {
 
 func (c *client) handleStream() {
 	log.GetLogger().Normal("Trying to request backup config from server...")
-	if _, err := request.Write(c.Stream, request.NewRequest(c.Config.ClientId, request.ID_CONFIG, "")); err != nil {
-		log.GetLogger().Fatal(err.Error())
+	if _, err := request.Write(c.Stream, request.NewRequest(c.Config.ClientId, generatedproto.RequestType_ID_CONFIG, &generatedproto.Backup{})); err != nil {
+		log.GetLogger().Fatal("Failed writing config getter request to stream: ", err.Error())
 	}
 
 	for {
-		r := request.Response{}
+		r := generatedproto.Response{}
 		_, readError := request.Read(c.Stream, &r)
 		if readError != nil {
 			log.GetLogger().Fatal("Read error occured during stream handling. Server error occured!", readError.Error())
 		}
 
 		switch r.Id {
-		case request.ID_CONFIG:
-			config := config.Backup{}
-			serializerError := serializer.Json.Serialize([]byte(r.Data), &config)
+		case generatedproto.RequestType_ID_CONFIG:
+			protoHelper := &generatedproto.Backup{}
+			serializerError := proto.Unmarshal([]byte(r.Data), protoHelper)
 			if serializerError != nil {
 				log.GetLogger().Fatal("Error occured during getting backup config.", serializerError.Error())
 			}
-			c.BackupConfig = &config
+			c.BackupConfig = &generatedproto.Backup{
+				WhenToBackup: protoHelper.WhenToBackup,
+				WhatToBackup: protoHelper.WhatToBackup,
+				Exclude:      protoHelper.Exclude,
+			}
 
 			log.GetLogger().Success("Got backup config from server!")
 			c.startBackup()
-		case request.ID_BACKUP_CHUNK_PROCESSED:
-			chunk := Chunk{}
-			serializerError := serializer.Json.Serialize([]byte(r.Data), &chunk)
+		case generatedproto.RequestType_ID_BACKUP_CHUNK_PROCESSED:
+			chunk := &generatedproto.Chunk{}
+			serializerError := proto.Unmarshal([]byte(r.Data), chunk)
 			if serializerError != nil {
 				log.GetLogger().Fatal("Error occured during getting chunk info from server.", serializerError.Error())
 			} else {
 				if err := os.Remove(path.Join(CHUNK_TEMP_DIR, chunk.ChunkName)); err != nil {
-					log.GetLogger().Error(err.Error())
+					log.GetLogger().Error("Failed to remove temp dir for chunks: ", err.Error())
 				}
 			}
 		}

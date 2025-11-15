@@ -1,50 +1,32 @@
 package request
 
 import (
-	"github.com/Siposattila/go-backup/serializer"
+	"github.com/Siposattila/go-backup/generatedproto"
 	"github.com/quic-go/webtransport-go"
+	"google.golang.org/protobuf/proto"
 )
 
-const (
-	ID_CONFIG                 = 10010
-	ID_BACKUP_START           = 10020
-	ID_BACKUP_CHUNK           = 10030
-	ID_BACKUP_CHUNK_PROCESSED = 10040
-	ID_BACKUP_END             = 10050
-)
+func NewResponse(id generatedproto.RequestType, data proto.Message) *generatedproto.Response {
+	d, _ := proto.Marshal(data)
 
-type Response struct {
-	Id   int    `json:"id"`
-	Data string `json:"data"`
-}
-
-type Request struct {
-	Id       int    `json:"id"`
-	Data     string `json:"data"`
-	ClientId string `json:"clientId"`
-}
-
-func NewResponse(id int, data any) *Response {
-	d, _ := serializer.Json.Deserialize(data)
-
-	return &Response{
+	return &generatedproto.Response{
 		Id:   id,
-		Data: string(d),
+		Data: d,
 	}
 }
 
-func NewRequest(clientId string, id int, data any) *Request {
-	d, _ := serializer.Json.Deserialize(data)
+func NewRequest(clientId string, id generatedproto.RequestType, data proto.Message) *generatedproto.Request {
+	d, _ := proto.Marshal(data)
 
-	return &Request{
+	return &generatedproto.Request{
 		Id:       id,
-		Data:     string(d),
+		Data:     d,
 		ClientId: clientId,
 	}
 }
 
-func Write[T *Request | *Response](stream webtransport.Stream, data T) (int, error) {
-	dataToWrite, serializerError := serializer.Json.Deserialize(data)
+func Write(stream webtransport.Stream, data proto.Message) (int, error) {
+	dataToWrite, serializerError := proto.Marshal(data)
 	if serializerError != nil {
 		return 0, serializerError
 	}
@@ -57,22 +39,16 @@ func Write[T *Request | *Response](stream webtransport.Stream, data T) (int, err
 	return n, nil
 }
 
-func Read[T *Request | *Response](stream webtransport.Stream, data T) (int, error) {
-	buffer := make([]byte, 50<<10) // 50 KB
-	totalRead := 0
-	isFull := false
-	for !isFull {
-		n, readError := stream.Read(buffer[totalRead:])
-		if readError != nil {
-			return 0, readError
-		}
-
-		totalRead += n
-		serializerError := serializer.Json.Serialize(buffer[:totalRead], data)
-		if serializerError == nil {
-			isFull = true
-		}
+func Read(stream webtransport.Stream, data proto.Message) (int, error) {
+	buffer := make([]byte, 500<<10) // 500 KB
+	n, readError := stream.Read(buffer)
+	if readError != nil {
+		return 0, readError
 	}
 
-	return totalRead, nil
+	if unmarshalError := proto.Unmarshal(buffer, data); unmarshalError != nil {
+		return 0, unmarshalError
+	}
+
+	return n, nil
 }

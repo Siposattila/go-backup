@@ -1,43 +1,16 @@
 package config
 
 import (
+	"github.com/Siposattila/go-backup/generatedproto"
 	"github.com/Siposattila/go-backup/io"
 	"github.com/Siposattila/go-backup/log"
 )
 
-type Server struct {
-	Port                          string `json:"port"`
-	Domain                        string `json:"domain"`
-	Username                      string `json:"username"`
-	Password                      string `json:"password"`
-	BackupPath                    string `json:"backupPath"`
-	StorageAlertTresholdInPercent int    `json:"storageAlertTresholdInPercent"`
-	RegisterNodeIfNotKnown        bool   `json:"registerNodeIfNotKnown"`
-	EmailAlert                    bool   `json:"emailAlert"`
-	email
-	DiscordAlert bool `json:"discordAlert"`
-	discord
-}
-
-type email struct {
-	EmailReceiver string `json:"emailReceiver"`
-	EmailSender   string `json:"emailSender"`
-	EmailUser     string `json:"emailUser"`
-	EmailPassword string `json:"emailPassword"`
-	EmailHost     string `json:"emailHost"`
-	EmailPort     int    `json:"emailPort"`
-}
-
-type discord struct {
-	DiscordWebHookId    string `json:"discordWebHookId"`
-	DiscordWebHookToken string `json:"discordWebHookToken"`
-}
-
-func (s *Server) Get() *Server {
-	var config Server
+func GetServerConfig() *generatedproto.Server {
+	var config *generatedproto.Server
 	rawConfig, readError := io.ReadFile(CONFIG_PATH, SERVER_CONFIG_FILENAME)
 	if readError != nil {
-		config = Server{
+		config = &generatedproto.Server{
 			Port:                          ":2000",
 			Domain:                        "localhost",
 			Username:                      "backup",
@@ -45,7 +18,7 @@ func (s *Server) Get() *Server {
 			BackupPath:                    ".",
 			StorageAlertTresholdInPercent: 95,
 			EmailAlert:                    false,
-			email: email{
+			Email: &generatedproto.Email{
 				EmailReceiver: "example@example.com",
 				EmailSender:   "example@example.com",
 				EmailUser:     "",
@@ -54,25 +27,25 @@ func (s *Server) Get() *Server {
 				EmailHost:     "",
 			},
 			DiscordAlert: false,
-			discord: discord{
+			Discord: &generatedproto.Discord{
 				DiscordWebHookId:    "",
 				DiscordWebHookToken: "",
 			},
 			RegisterNodeIfNotKnown: true,
 		}
 
-		generationError := generateConfig(&config, SERVER_CONFIG_FILENAME)
+		generationError := generateConfig(config, SERVER_CONFIG_FILENAME)
 		if generationError != nil {
-			log.GetLogger().Fatal(generationError.Error())
+			log.GetLogger().Fatal("Failed to generate server config: ", generationError.Error())
 		}
 	} else {
-		loadedConfig, loadError := loadConfig[*Server](rawConfig)
+		loadedConfig, loadError := loadConfig[*generatedproto.Server](rawConfig)
 		if loadError != nil {
-			log.GetLogger().Fatal(loadError.Error())
+			log.GetLogger().Fatal("Failed to load server config: ", loadError.Error())
 		}
 
-		config = **loadedConfig
+		config = *loadedConfig
 	}
 
-	return &config
+	return config
 }

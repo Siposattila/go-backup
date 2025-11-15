@@ -1,0 +1,11 @@
+syntax = "proto3";
+package request;
+
+option go_package = "/generatedproto";
+
+message Chunk {
+  string name = 1;
+  string chunkName = 2;
+  bytes data = 3;
+  int32 size = 4;
+}

@@ -18,6 +18,7 @@ func main() {
 	} else {
 		if *clientName != "" {
 			// TODO: logic for adding a client
+			log.GetLogger().Normal("In this current version this command is not implemented! Checkout the documentation on how to add a new client.")
 		} else {
 			log.GetLogger().Fatal("Expected atleast one valid flag!")
 		}

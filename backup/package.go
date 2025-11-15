@@ -27,7 +27,7 @@ func (c *compression) zipCompress(name string) (zipPath string) {
 	zipPath = path.Join(c.BackupPath, name)
 	var zipFile, err = os.Create(zipPath)
 	if err != nil {
-		log.GetLogger().Fatal(err.Error())
+		log.GetLogger().Fatal("Failed to create zip file: ", err.Error())
 	}
 
 	var writer = zip.NewWriter(zipFile)
@@ -39,7 +39,7 @@ func (c *compression) zipCompress(name string) (zipPath string) {
 		}
 	}
 	if err := writer.Close(); err != nil {
-		log.GetLogger().Fatal(err.Error())
+		log.GetLogger().Fatal("Failed to close zip writer: ", err.Error())
 	}
 
 	r, _ := zip.OpenReader(zipPath)
@@ -52,7 +52,7 @@ func (c *compression) zipCompress(name string) (zipPath string) {
 		zipPath = ""
 	}
 	if err := r.Close(); err != nil {
-		log.GetLogger().Fatal(err.Error())
+		log.GetLogger().Fatal("Failed to close zip file: ", err.Error())
 	}
 
 	return
@@ -74,7 +74,7 @@ func (c *compression) writeFiles(fullPath string, files []fs.DirEntry, writer *z
 
 			var openedFile, openError = os.Open(path.Join(fullPath, file.Name()))
 			if openError != nil {
-				log.GetLogger().Fatal(openError.Error())
+				log.GetLogger().Fatal("Failed to open file for zip write: ", openError.Error())
 			}
 
 			checksum := c.Store.checksum(path.Join(fullPath, file.Name()))
@@ -88,10 +88,10 @@ func (c *compression) writeFiles(fullPath string, files []fs.DirEntry, writer *z
 
 				if fileWriter, err := writer.Create(file.Name()); err == nil {
 					if _, err := io.Copy(fileWriter, openedFile); err != nil {
-						log.GetLogger().Fatal(err.Error())
+						log.GetLogger().Fatal("Failed to copy file content to zip file: ", err.Error())
 					}
 				} else {
-					log.GetLogger().Fatal(err.Error())
+					log.GetLogger().Fatal("Failed to create file in zip: ", err.Error())
 				}
 			}
 		}

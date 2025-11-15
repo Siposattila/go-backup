@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"github.com/Siposattila/go-backup/alert"
-	"github.com/Siposattila/go-backup/client"
 	"github.com/Siposattila/go-backup/config"
 	"github.com/Siposattila/go-backup/disk"
+	"github.com/Siposattila/go-backup/generatedproto"
 	"github.com/Siposattila/go-backup/log"
 	"github.com/Siposattila/go-backup/request"
 	"github.com/Siposattila/go-backup/serializer"
@@ -28,14 +28,14 @@ type Server interface {
 
 type server struct {
 	Transport webtransport.Server
-	Config    *config.Server
+	Config    *generatedproto.Server
 	Discord   alert.AlertInterface
 	Email     alert.AlertInterface
 }
 
 func NewServer() Server {
 	var s server
-	s.Config = s.Config.Get()
+	s.Config = config.GetServerConfig()
 	s.Transport = webtransport.Server{
 		H3: http3.Server{Addr: s.Config.Port, QUICConfig: &quic.Config{
 			EnableDatagrams: true,
@@ -51,18 +51,18 @@ func NewServer() Server {
 	s.getTlsConfig()
 
 	if s.Config.DiscordAlert {
-		s.Discord = alert.NewDiscord(s.Config.DiscordWebHookId, s.Config.DiscordWebHookToken)
+		s.Discord = alert.NewDiscord(s.Config.Discord.DiscordWebHookId, s.Config.Discord.DiscordWebHookToken)
 		s.Discord.Start()
 	}
 
 	if s.Config.EmailAlert {
 		s.Email = alert.NewEmail(
-			s.Config.EmailReceiver,
-			s.Config.EmailSender,
-			s.Config.EmailUser,
-			s.Config.EmailPassword,
-			s.Config.EmailHost,
-			s.Config.EmailPort,
+			s.Config.Email.EmailReceiver,
+			s.Config.Email.EmailSender,
+			s.Config.Email.EmailUser,
+			s.Config.Email.EmailPassword,
+			s.Config.Email.EmailHost,
+			int(s.Config.Email.EmailPort),
 		)
 		s.Email.Start()
 	}
@@ -142,7 +142,7 @@ func (s *server) handleStream(stream webtransport.Stream) {
 	var clientId string
 
 	for {
-		r := request.Request{}
+		r := generatedproto.Request{}
 		_, readError := request.Read(stream, &r)
 		if readError != nil {
 			source := "unknown"
@@ -160,47 +160,49 @@ func (s *server) handleStream(stream webtransport.Stream) {
 		}
 
 		switch r.Id {
-		case request.ID_CONFIG:
+		case generatedproto.RequestType_ID_CONFIG:
 			log.GetLogger().Normal(fmt.Sprintf("%s sent a request for it's backup config.", clientId))
 
-			var backupConfig config.Backup
-			backupConfig = *backupConfig.Get(clientId)
-			if _, err := request.Write(stream, request.NewResponse(request.ID_CONFIG, backupConfig)); err != nil {
+			if _, err := request.Write(
+				stream,
+				request.NewResponse(
+					generatedproto.RequestType_ID_CONFIG,
+					config.GetBackupConfig(r.ClientId))); err != nil {
 				log.GetLogger().Error(err.Error())
 			}
 
 			log.GetLogger().Success("Backup config sent to " + clientId)
-		case request.ID_BACKUP_START:
+		case generatedproto.RequestType_ID_BACKUP_START:
 			log.GetLogger().Normal(fmt.Sprintf("%s started sending backup...", clientId))
 
-			info := client.Info{}
+			info := generatedproto.Info{}
 			serializerError := serializer.Json.Serialize([]byte(r.Data), &info)
 			if serializerError != nil {
 				log.GetLogger().Error("Error occured during getting file info.", serializerError.Error())
 			} else {
 				diskUsage := disk.NewDiskUsage("/")
-				usageAfterBackupTransfer := int(diskUsage.Used()+uint64(info.Size)) * 100 / int(diskUsage.Size())
+				usageAfterBackupTransfer := int32(diskUsage.Used()+uint64(info.Size)) * 100 / int32(diskUsage.Size())
 				if diskUsage.Usage() >= s.Config.StorageAlertTresholdInPercent || usageAfterBackupTransfer >= s.Config.StorageAlertTresholdInPercent {
 					s.alertSystem(fmt.Sprintf("Warning the storage alert treshold was met! The current usage is: %d%s", usageAfterBackupTransfer, "%"))
 				}
 			}
-		case request.ID_BACKUP_CHUNK:
-			chunk := client.Chunk{}
+		case generatedproto.RequestType_ID_BACKUP_CHUNK:
+			chunk := &generatedproto.Chunk{}
 			serializerError := serializer.Json.Serialize([]byte(r.Data), &chunk)
 			if serializerError != nil {
 				log.GetLogger().Error("Error occured during getting chunk.", serializerError.Error())
 			} else {
-				s.writeChunk(&chunk)
+				s.writeChunk(chunk)
 				chunk.Data = nil // do not need to send back the chunk data
 
-				if _, err := request.Write(stream, request.NewResponse(request.ID_BACKUP_CHUNK_PROCESSED, chunk)); err != nil {
+				if _, err := request.Write(stream, request.NewResponse(generatedproto.RequestType_ID_BACKUP_CHUNK_PROCESSED, chunk)); err != nil {
 					log.GetLogger().Error(err.Error())
 				}
 			}
-		case request.ID_BACKUP_END:
+		case generatedproto.RequestType_ID_BACKUP_END:
 			log.GetLogger().Success(fmt.Sprintf("Received backup from %s...", clientId))
 
-			info := client.Info{}
+			info := generatedproto.Info{}
 			serializerError := serializer.Json.Serialize([]byte(r.Data), &info)
 			if serializerError != nil {
 				log.GetLogger().Error("Error occured during getting file info.", serializerError.Error())
@@ -213,6 +215,6 @@ func (s *server) handleStream(stream webtransport.Stream) {
 	}
 
 	if err := stream.Close(); err != nil {
-		log.GetLogger().Fatal(err.Error())
+		log.GetLogger().Fatal("Failed to close stream: ", err.Error())
 	}
 }

@@ -1,0 +1,32 @@
+syntax = "proto3";
+package server;
+
+option go_package = "/generatedproto";
+
+message Email {
+  string emailReceiver = 1;
+  string emailSender = 2;
+  string emailUser = 3;
+  string emailPassword = 4;
+  string emailHost = 5;
+  int32 emailPort = 6;
+}
+
+message Discord {
+  string discordWebHookId = 1;
+  string discordWebHookToken = 2;
+}
+
+message Server {
+  string port = 1;
+  string domain = 2;
+  string username = 3;
+  string password = 4;
+  string backupPath = 5;
+  int32 storageAlertTresholdInPercent = 6;
+  bool registerNodeIfNotKnown = 7;
+  bool emailAlert = 8;
+  Email email = 12;
+  bool discordAlert = 10;
+  Discord discord = 11;
+}

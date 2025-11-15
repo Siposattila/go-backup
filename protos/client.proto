@@ -1,0 +1,16 @@
+syntax = "proto3";
+package server;
+
+option go_package = "/generatedproto";
+
+message Backup {
+  string whenToBackup = 1;
+  repeated string whatToBackup = 2;
+  repeated string exclude = 3;
+}
+
+message Client {
+  string clientId = 1;
+  string token = 2;
+  string endpoint = 3;
+}

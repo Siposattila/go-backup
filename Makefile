@@ -1,7 +1,7 @@
 APP_NAME := go-backup
 BUILD_DIR := build
 
-.PHONY: all tidy watch watch_server watch_client build clean
+.PHONY: all tidy watch watch_server watch_client build clean proto buffer
 
 all: build
 
@@ -30,9 +30,9 @@ clean:
 	@rm -rf $(BUILD_DIR)
 	@echo "Cleaning up done!"
 
-linux_max_buffer_size:
-	@sysctl -w net.core.rmem_max=7500000
-	@sysctl -w net.core.wmem_max=7500000
+buffer:
+	@sudo sysctl -w net.core.rmem_max=7500000
+	@sudo sysctl -w net.core.wmem_max=7500000
 
 watch:
 	@if ! [ -x "$(command -v air)" ]; then \
@@ -47,3 +47,10 @@ watch_server: watch
 
 watch_client: watch
 	@air -c .air_client.toml
+
+proto:
+	@protoc --go_out=. ./protos/request.proto
+	@protoc --go_out=. ./protos/chunk.proto
+	@protoc --go_out=. ./protos/client.proto
+	@protoc --go_out=. ./protos/info.proto
+	@protoc --go_out=. ./protos/server.proto

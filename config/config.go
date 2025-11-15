@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/Siposattila/go-backup/generatedproto"
 	"github.com/Siposattila/go-backup/io"
 	"github.com/Siposattila/go-backup/serializer"
 )
@@ -12,11 +13,7 @@ const (
 	BACKUP_CONFIG_FILENAME = "backup_?.json"
 )
 
-type Config[T Server | Client | Backup] interface {
-	Get() T
-}
-
-func generateConfig[T *Server | *Client | *Backup](config T, configName string) error {
+func generateConfig[T *generatedproto.Server | *generatedproto.Client | *generatedproto.Backup](config T, configName string) error {
 	io.CreateDir(CONFIG_PATH)
 	buffer, serializerError := serializer.Json.Deserialize(config)
 	if serializerError != nil {
@@ -28,7 +25,7 @@ func generateConfig[T *Server | *Client | *Backup](config T, configName string) 
 	return nil
 }
 
-func loadConfig[T *Server | *Client | *Backup](rawConfig []byte) (*T, error) {
+func loadConfig[T *generatedproto.Server | *generatedproto.Client | *generatedproto.Backup](rawConfig []byte) (*T, error) {
 	config := new(T)
 	serializerError := serializer.Json.Serialize(rawConfig, config)
 	if serializerError != nil {
