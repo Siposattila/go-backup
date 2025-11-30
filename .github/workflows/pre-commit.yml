@@ -15,9 +15,12 @@ jobs:
           curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b /usr/local/bin v2.4.0
         shell: bash
 
-      - name: install and run protoc
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3
+
+      - name: run protoc
         run: |
-          apt-get install protobuf-compiler && make proto
+          make proto
         shell: bash
 
       - uses: pre-commit/action@v3.0.1
