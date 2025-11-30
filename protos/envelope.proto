@@ -1,0 +1,20 @@
+syntax = "proto3";
+package request;
+
+option go_package = "/proto";
+
+import "protos/backup.proto";
+
+message Envelope {
+  string clientId = 1;
+  oneof message {
+    BackupConfigRequest backupConfigRequest = 2;
+    BackupConfigResponse backupConfigResponse = 3;
+    BackupChunkRequest backupChunkRequest = 4;
+    BackupChunkResponse backupChunkResponse = 5;
+    BackupStartRequest backupStartRequest = 6;
+    BackupStartResponse backupStartResponse = 7;
+    BackupEndRequest backupEndRequest = 8;
+    BackupEndResponse backupEndResponse = 9;
+  }
+}

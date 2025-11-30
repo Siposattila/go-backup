@@ -1,78 +1,57 @@
 package request
 
 import (
-	"github.com/Siposattila/go-backup/serializer"
+	"encoding/binary"
+	"fmt"
+	"io"
+
 	"github.com/quic-go/webtransport-go"
+	"google.golang.org/protobuf/proto"
 )
 
-const (
-	ID_CONFIG                 = 10010
-	ID_BACKUP_START           = 10020
-	ID_BACKUP_CHUNK           = 10030
-	ID_BACKUP_CHUNK_PROCESSED = 10040
-	ID_BACKUP_END             = 10050
-)
-
-type Response struct {
-	Id   int    `json:"id"`
-	Data string `json:"data"`
-}
-
-type Request struct {
-	Id       int    `json:"id"`
-	Data     string `json:"data"`
-	ClientId string `json:"clientId"`
-}
-
-func NewResponse(id int, data any) *Response {
-	d, _ := serializer.Json.Deserialize(data)
-
-	return &Response{
-		Id:   id,
-		Data: string(d),
-	}
-}
-
-func NewRequest(clientId string, id int, data any) *Request {
-	d, _ := serializer.Json.Deserialize(data)
-
-	return &Request{
-		Id:       id,
-		Data:     string(d),
-		ClientId: clientId,
-	}
-}
-
-func Write[T *Request | *Response](stream webtransport.Stream, data T) (int, error) {
-	dataToWrite, serializerError := serializer.Json.Deserialize(data)
-	if serializerError != nil {
-		return 0, serializerError
+func Write(stream webtransport.Stream, msg proto.Message) (int, error) {
+	data, err := proto.Marshal(msg)
+	if err != nil {
+		return 0, fmt.Errorf("marshal: %w", err)
 	}
 
-	n, writeError := stream.Write(dataToWrite)
-	if writeError != nil {
-		return 0, writeError
+	// Write length prefix
+	length := uint32(len(data))
+	lenBuf := make([]byte, 4)
+	binary.BigEndian.PutUint32(lenBuf, length)
+
+	if _, err := stream.Write(lenBuf); err != nil {
+		return 0, fmt.Errorf("write length: %w", err)
+	}
+
+	n, err := stream.Write(data)
+	if err != nil {
+		return 0, fmt.Errorf("write data: %w", err)
 	}
 
 	return n, nil
 }
 
-func Read[T *Request | *Response](stream webtransport.Stream, data T) (int, error) {
-	buffer := make([]byte, 50<<10) // 50 KB
-	totalRead := 0
-	isFull := false
-	for !isFull {
-		n, readError := stream.Read(buffer[totalRead:])
-		if readError != nil {
-			return 0, readError
-		}
-
-		totalRead += n
-		serializerError := serializer.Json.Serialize(buffer[:totalRead], data)
-		if serializerError == nil {
-			isFull = true
-		}
+func Read(stream webtransport.Stream, msg proto.Message) (int, error) {
+	// Read the length prefix (4 bytes)
+	lenBuf := make([]byte, 4)
+	if _, err := io.ReadFull(stream, lenBuf); err != nil {
+		return 0, fmt.Errorf("read length: %w", err)
 	}
 
-	return totalRead, nil
+	length := binary.BigEndian.Uint32(lenBuf)
+	if length == 0 {
+		return 0, fmt.Errorf("invalid zero-length message")
+	}
+
+	data := make([]byte, length)
+	if _, err := io.ReadFull(stream, data); err != nil {
+		return 0, fmt.Errorf("read payload: %w", err)
+	}
+
+	if err := proto.Unmarshal(data, msg); err != nil {
+		return 0, fmt.Errorf("unmarshal: %w", err)
+	}
+
+	return int(length), nil
 }

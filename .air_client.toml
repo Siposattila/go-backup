@@ -1,0 +1,42 @@
+[build]
+  args_bin = ["-client"]
+  bin = "./build/go-backup"
+  cmd = "make build"
+  delay = 1000
+  exclude_dir = ["chunk_temp", "config.d", "build"]
+  exclude_file = ["checksum_store.json", "old_checksum_store.json", "gobkup.log"]
+  exclude_regex = ["_test.go", "_backup\\..*$"]
+  exclude_unchanged = false
+  follow_symlink = false
+  full_bin = "dlv exec ./build/go-backup --listen=127.0.0.1:2346 --headless=true --api-version=2 --accept-multiclient --continue --log --"
+  include_dir = []
+  include_ext = ["go"]
+  include_file = []
+  kill_delay = "0s"
+  log = "build-errors.log"
+  poll = false
+  poll_interval = 0
+  post_cmd = []
+  pre_cmd = []
+  rerun = false
+  rerun_delay = 500
+  send_interrupt = false
+  stop_on_error = false
+
+[color]
+  app = ""
+  build = "yellow"
+  main = "magenta"
+  runner = "green"
+  watcher = "cyan"
+
+[log]
+  main_only = false
+  time = false
+
+[misc]
+  clean_on_exit = false
+
+[screen]
+  clear_on_rebuild = false
+  keep_scroll = true

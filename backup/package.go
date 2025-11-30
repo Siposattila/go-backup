@@ -15,38 +15,47 @@ import (
 )
 
 type compression struct {
-	BackupPath string
-	Paths      *[]string
-	Exclude    *[]string
-	Store      *store
+	BackupPath     string
+	Paths          *[]string
+	Exclude        *[]string
+	ShouldUseStore bool
+	Store          *store
 }
 
 type filterFunc func(fs.DirEntry) bool
 
 func (c *compression) zipCompress(name string) (zipPath string) {
+	if c.ShouldUseStore && c.Store == nil {
+		c.Store = getStore()
+	}
+
 	zipPath = path.Join(c.BackupPath, name)
 	var zipFile, err = os.Create(zipPath)
 	if err != nil {
-		log.GetLogger().Fatal(err.Error())
+		log.GetLogger().Fatal("Failed to create zip file: ", err.Error())
 	}
 
 	var writer = zip.NewWriter(zipFile)
 	for _, path := range *c.Paths {
 		if files, err := c.getFiles(path); err == nil {
 			c.writeFiles(path, files, writer)
-		} else {
-			continue
 		}
 	}
-	writer.Close()
+	if err := writer.Close(); err != nil {
+		log.GetLogger().Fatal("Failed to close zip writer: ", err.Error())
+	}
 
 	r, _ := zip.OpenReader(zipPath)
-	defer r.Close()
 	if len(r.File) == 0 {
 		log.GetLogger().Warning("Empty archive!")
-		os.Remove(zipPath)
+		if err := os.Remove(zipPath); err != nil {
+			log.GetLogger().Error(err.Error())
+		}
 
-		return ""
+		zipPath = ""
+	}
+	if err := r.Close(); err != nil {
+		log.GetLogger().Fatal("Failed to close zip file: ", err.Error())
 	}
 
 	return
@@ -68,29 +77,43 @@ func (c *compression) writeFiles(fullPath string, files []fs.DirEntry, writer *z
 
 			var openedFile, openError = os.Open(path.Join(fullPath, file.Name()))
 			if openError != nil {
-				log.GetLogger().Fatal(openError.Error())
+				log.GetLogger().Fatal("Failed to open file for zip write: ", openError.Error())
 			}
 
-			checksum := c.Store.checksum(path.Join(fullPath, file.Name()))
-			if contains, index := c.Store.contains(file.Name()); (contains &&
-				checksum != c.Store.Entries[index].Checksum) || !contains {
-				if contains {
-					c.Store.Entries[index].Checksum = checksum
-				} else {
-					c.Store.add(entry{Name: file.Name(), Checksum: checksum})
-				}
+			// FIXME: ugly and not nice refactor
+			if c.ShouldUseStore {
+				checksum := c.Store.checksum(path.Join(fullPath, file.Name()))
+				if contains, index := c.Store.contains(file.Name()); (contains &&
+					checksum != c.Store.Entries[index].Checksum) || !contains {
+					if contains {
+						c.Store.Entries[index].Checksum = checksum
+					} else {
+						c.Store.add(entry{Name: file.Name(), Checksum: checksum})
+					}
 
+					if fileWriter, err := writer.Create(file.Name()); err == nil {
+						if _, err := io.Copy(fileWriter, openedFile); err != nil {
+							log.GetLogger().Fatal("Failed to copy file content to zip file: ", err.Error())
+						}
+					} else {
+						log.GetLogger().Fatal("Failed to create file in zip: ", err.Error())
+					}
+				}
+			} else {
 				if fileWriter, err := writer.Create(file.Name()); err == nil {
 					if _, err := io.Copy(fileWriter, openedFile); err != nil {
-						log.GetLogger().Fatal(err.Error())
+						log.GetLogger().Fatal("Failed to copy file content to zip file: ", err.Error())
 					}
 				} else {
-					log.GetLogger().Fatal(err.Error())
+					log.GetLogger().Fatal("Failed to create file in zip: ", err.Error())
 				}
 			}
 		}
 	}
-	c.Store.saveStore()
+
+	if c.ShouldUseStore {
+		c.Store.saveStore()
+	}
 }
 
 func (c *compression) getFiles(path string) ([]fs.DirEntry, error) {

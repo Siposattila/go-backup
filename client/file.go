@@ -8,56 +8,29 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/Siposattila/go-backup/log"
+	"github.com/Siposattila/go-backup/proto"
 	"github.com/Siposattila/go-backup/request"
 )
 
 const (
-	CHUNK_SIZE     = 10 << 10 // 10KB
+	CHUNK_SIZE     = 10 << 10 // 10 kilobytes
 	CHUNK_TEMP_DIR = "./chunk_temp"
 	CHUNK_NAME     = "%s.part%d"
 )
 
-type Info struct {
-	Name string `json:"name"`
-	Size int    `json:"size"`
-}
-
-type Chunk struct {
-	Name      string `json:"name"`
-	ChunkName string `json:"chunkName"`
-	Data      []byte `json:"data"`
-	Size      int    `json:"size"`
-}
-
-func NewInfo(name string, size int) *Info {
-	return &Info{
-		Name: name,
-		Size: size,
-	}
-}
-
-func NewChunk(name string, chunkName string, data []byte) *Chunk {
-	return &Chunk{
-		Name:      name,
-		ChunkName: chunkName,
-		Data:      data,
-		Size:      CHUNK_SIZE,
-	}
-}
-
 func chunkFile(name string) (int, error) {
 	if _, err := os.Stat(CHUNK_TEMP_DIR); errors.Is(err, os.ErrNotExist) {
-		os.Mkdir(CHUNK_TEMP_DIR, 0777)
+		if err := os.Mkdir(CHUNK_TEMP_DIR, 0777); err != nil {
+			return 0, fmt.Errorf("failed to mkdir chunk temp directory: %s", err.Error())
+		}
 	}
 
 	file, err := os.Open(name)
 	if err != nil {
 		return 0, err
 	}
-	defer file.Close()
 
 	buffer := make([]byte, CHUNK_SIZE)
 	baseName := filepath.Base(name)
@@ -80,12 +53,20 @@ func chunkFile(name string) (int, error) {
 
 		_, writeErr := partFile.Write(buffer[:n])
 		if writeErr != nil {
-			partFile.Close()
-			return 0, writeErr
+			if err := partFile.Close(); err != nil {
+				return 0, fmt.Errorf("closing part file failed after failing to write to it: %s", err.Error())
+			}
+			return 0, fmt.Errorf("writing part file failed: %s", writeErr.Error())
 		}
 
-		partFile.Close()
+		if err := partFile.Close(); err != nil {
+			return 0, fmt.Errorf("closing part file failed: %s", err.Error())
+		}
 		partNum++
+	}
+
+	if err := file.Close(); err != nil {
+		return 0, fmt.Errorf("closing file %s failed: %s", name, err.Error())
 	}
 
 	return partNum, nil
@@ -99,32 +80,70 @@ func (c *client) handNewBackup() {
 
 		info, err := os.Stat(newBackupPath)
 		if err != nil {
-			log.GetLogger().Fatal(err.Error())
+			log.GetLogger().Fatal("Stat failed for new backup path: ", err.Error())
 		}
 
-		backupInfo := NewInfo(backupName, int(info.Size()))
-		request.Write(c.Stream, request.NewRequest(c.Config.ClientId, request.ID_BACKUP_START, backupInfo))
-		time.Sleep(10 * time.Millisecond) // looks like this is necessary because it writes too fast
+		if _, err := request.Write(c.ServerStream, &proto.Envelope{
+			ClientId: c.Config.ClientId,
+			Message: &proto.Envelope_BackupStartRequest{
+				BackupStartRequest: &proto.BackupStartRequest{
+					Name: backupName,
+					Size: int32(info.Size()),
+				},
+			},
+		}); err != nil {
+			log.GetLogger().Fatal("Writing backup info failed: ", err.Error())
+		}
+		// TODO: should investigate if we need this or not
+		// time.Sleep(10 * time.Millisecond) // Looks like this is necessary because it writes too fast
 
 		n, err := chunkFile(newBackupPath)
 		if err != nil {
-			log.GetLogger().Fatal(err.Error())
+			log.GetLogger().Fatal("Chunk file failed: ", err.Error())
 		}
 
 		for partNum := range n {
 			partFile, err := os.Open(path.Join(CHUNK_TEMP_DIR, fmt.Sprintf(CHUNK_NAME, backupName, partNum)))
 			if err != nil {
-				log.GetLogger().Fatal(err.Error())
+				log.GetLogger().Fatal("Opening part file failed: ", err.Error())
 			}
 
 			data := make([]byte, CHUNK_SIZE)
-			partFile.Read(data)
-			request.Write(c.Stream, request.NewRequest(c.Config.ClientId, request.ID_BACKUP_CHUNK, NewChunk(backupName, strings.Split(partFile.Name(), "/")[1], data)))
+			size, partFileReadError := partFile.Read(data)
+			if partFileReadError != nil {
+				log.GetLogger().Fatal("Reading part file failed: ", partFileReadError.Error())
+			}
+			if _, err := request.Write(
+				c.ServerStream, &proto.Envelope{
+					ClientId: c.Config.ClientId,
+					Message: &proto.Envelope_BackupChunkRequest{
+						BackupChunkRequest: &proto.BackupChunkRequest{
+							Chunk: &proto.BackupChunk{
+								Name:      backupName,
+								ChunkName: strings.Split(partFile.Name(), "/")[1],
+								Data:      data,
+								Size:      int32(size),
+							},
+						},
+					},
+				}); err != nil {
+				log.GetLogger().Fatal("Writing chunk to stream failed: ", err.Error())
+			}
 
-			partFile.Close()
-			time.Sleep(10 * time.Millisecond) // looks like this is necessary because it writes too fast
+			if err := partFile.Close(); err != nil {
+				log.GetLogger().Error("Closing part file failed: ", err.Error())
+			}
+			// TODO: should investigate if we need this or not
+			// time.Sleep(10 * time.Millisecond) // Looks like this is necessary because it writes too fast
 		}
 
-		request.Write(c.Stream, request.NewRequest(c.Config.ClientId, request.ID_BACKUP_END, backupInfo))
+		if _, err := request.Write(c.ServerStream, &proto.Envelope{
+			ClientId: c.Config.ClientId,
+			Message: &proto.Envelope_BackupEndRequest{
+				BackupEndRequest: &proto.BackupEndRequest{Name: backupName},
+			},
+		}); err != nil {
+			log.GetLogger().Fatal("Writing backup end to stream failed: ", err.Error())
+		}
 	}
 }

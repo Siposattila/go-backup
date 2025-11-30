@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/Siposattila/go-backup/log"
+	"github.com/Siposattila/go-backup/proto"
 	"github.com/robfig/cron/v3"
 )
 
@@ -15,23 +16,19 @@ type BackupInterface interface {
 }
 
 type backup struct {
-	CronExpression string
-	WhatToBackup   *[]string
-	Exclude        *[]string
-	Cron           cron.Schedule
-	stopChannel    chan bool
+	Config      *proto.BackupConfig
+	Cron        cron.Schedule
+	stopChannel chan bool
 }
 
-func NewBackup(cronExpression string, whatToBackup *[]string, exclude *[]string) BackupInterface {
+func NewBackup(config *proto.BackupConfig) BackupInterface {
 	var newBackup = backup{
-		CronExpression: cronExpression,
-		WhatToBackup:   whatToBackup,
-		Exclude:        exclude,
+		Config: config,
 	}
 
 	var schedule, parseError = cron.
 		NewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow).
-		Parse(newBackup.CronExpression)
+		Parse(newBackup.Config.WhenToBackup)
 	if parseError != nil {
 		log.GetLogger().Fatal("Your cron expression is invalid or an error occured!", parseError.Error())
 	}
@@ -48,10 +45,10 @@ func (b *backup) Backup(newBackupPathChannel chan<- string) {
 		log.GetLogger().Normal("Backing up...")
 
 		c := compression{
-			BackupPath: os.TempDir(),
-			Paths:      b.WhatToBackup,
-			Exclude:    b.Exclude,
-			Store:      getStore(),
+			BackupPath:     os.TempDir(),
+			Paths:          &b.Config.WhatToBackup,
+			Exclude:        &b.Config.Exclude,
+			ShouldUseStore: !b.Config.IsFullBackupOnly,
 		}
 		zipPath := c.zipCompress(fmt.Sprintf("%s_backup.zip", time.Now().Format("20060102150405")))
 
