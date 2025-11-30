@@ -6,4 +6,4 @@ old_checksum_store.json
 chunk_temp
 build/
 build-errors.log
-generatedproto
+proto

@@ -49,8 +49,4 @@ watch_client: watch
 	@air -c .air_client.toml
 
 proto:
-	@protoc --go_out=. ./protos/request.proto
-	@protoc --go_out=. ./protos/chunk.proto
-	@protoc --go_out=. ./protos/client.proto
-	@protoc --go_out=. ./protos/info.proto
-	@protoc --go_out=. ./protos/server.proto
+	@protoc --go_out=. ./protos/*.proto

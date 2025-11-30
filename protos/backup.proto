@@ -1,0 +1,50 @@
+syntax = "proto3";
+package request;
+
+option go_package = "/proto";
+
+message BackupConfig {
+  string whenToBackup = 1;
+  repeated string whatToBackup = 2;
+  repeated string exclude = 3;
+  bool isFullBackupOnly = 4;
+}
+
+message BackupConfigRequest {}
+
+message BackupConfigResponse {
+  BackupConfig backupConfig = 1;
+}
+
+message BackupStartRequest {
+  string name = 1;
+  int32 size = 2;
+}
+
+message BackupStartResponse {
+  bool isOk = 1;
+}
+
+message BackupChunk {
+  string name = 1;
+  string chunkName = 2;
+  bytes data = 3;
+  int32 size = 4;
+}
+
+message BackupChunkRequest {
+  BackupChunk chunk = 1;
+}
+
+message BackupChunkResponse {
+  string chunkName = 1;
+  bool isOk = 2;
+}
+
+message BackupEndRequest {
+  string name = 1;
+}
+
+message BackupEndResponse {
+  bool isOk = 1;
+}

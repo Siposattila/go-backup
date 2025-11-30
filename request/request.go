@@ -1,54 +1,57 @@
 package request
 
 import (
-	"github.com/Siposattila/go-backup/generatedproto"
+	"encoding/binary"
+	"fmt"
+	"io"
+
 	"github.com/quic-go/webtransport-go"
 	"google.golang.org/protobuf/proto"
 )
 
-func NewResponse(id generatedproto.RequestType, data proto.Message) *generatedproto.Response {
-	d, _ := proto.Marshal(data)
-
-	return &generatedproto.Response{
-		Id:   id,
-		Data: d,
-	}
-}
-
-func NewRequest(clientId string, id generatedproto.RequestType, data proto.Message) *generatedproto.Request {
-	d, _ := proto.Marshal(data)
-
-	return &generatedproto.Request{
-		Id:       id,
-		Data:     d,
-		ClientId: clientId,
-	}
-}
-
-func Write(stream webtransport.Stream, data proto.Message) (int, error) {
-	dataToWrite, serializerError := proto.Marshal(data)
-	if serializerError != nil {
-		return 0, serializerError
+func Write(stream webtransport.Stream, msg proto.Message) (int, error) {
+	data, err := proto.Marshal(msg)
+	if err != nil {
+		return 0, fmt.Errorf("marshal: %w", err)
 	}
 
-	n, writeError := stream.Write(dataToWrite)
-	if writeError != nil {
-		return 0, writeError
+	// Write length prefix
+	length := uint32(len(data))
+	lenBuf := make([]byte, 4)
+	binary.BigEndian.PutUint32(lenBuf, length)
+
+	if _, err := stream.Write(lenBuf); err != nil {
+		return 0, fmt.Errorf("write length: %w", err)
+	}
+
+	n, err := stream.Write(data)
+	if err != nil {
+		return 0, fmt.Errorf("write data: %w", err)
 	}
 
 	return n, nil
 }
 
-func Read(stream webtransport.Stream, data proto.Message) (int, error) {
-	buffer := make([]byte, 500<<10) // 500 KB
-	n, readError := stream.Read(buffer)
-	if readError != nil {
-		return 0, readError
+func Read(stream webtransport.Stream, msg proto.Message) (int, error) {
+	// Read the length prefix (4 bytes)
+	lenBuf := make([]byte, 4)
+	if _, err := io.ReadFull(stream, lenBuf); err != nil {
+		return 0, fmt.Errorf("read length: %w", err)
 	}
 
-	if unmarshalError := proto.Unmarshal(buffer, data); unmarshalError != nil {
-		return 0, unmarshalError
+	length := binary.BigEndian.Uint32(lenBuf)
+	if length == 0 {
+		return 0, fmt.Errorf("invalid zero-length message")
 	}
 
-	return n, nil
+	data := make([]byte, length)
+	if _, err := io.ReadFull(stream, data); err != nil {
+		return 0, fmt.Errorf("read payload: %w", err)
+	}
+
+	if err := proto.Unmarshal(data, msg); err != nil {
+		return 0, fmt.Errorf("unmarshal: %w", err)
+	}
+
+	return int(length), nil
 }

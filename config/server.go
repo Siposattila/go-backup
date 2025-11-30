@@ -1,16 +1,16 @@
 package config
 
 import (
-	"github.com/Siposattila/go-backup/generatedproto"
 	"github.com/Siposattila/go-backup/io"
 	"github.com/Siposattila/go-backup/log"
+	"github.com/Siposattila/go-backup/proto"
 )
 
-func GetServerConfig() *generatedproto.Server {
-	var config *generatedproto.Server
+func GetServerConfig() *proto.Server {
+	var config *proto.Server
 	rawConfig, readError := io.ReadFile(CONFIG_PATH, SERVER_CONFIG_FILENAME)
 	if readError != nil {
-		config = &generatedproto.Server{
+		config = &proto.Server{
 			Port:                          ":2000",
 			Domain:                        "localhost",
 			Username:                      "backup",
@@ -18,7 +18,7 @@ func GetServerConfig() *generatedproto.Server {
 			BackupPath:                    ".",
 			StorageAlertTresholdInPercent: 95,
 			EmailAlert:                    false,
-			Email: &generatedproto.Email{
+			Email: &proto.Email{
 				EmailReceiver: "example@example.com",
 				EmailSender:   "example@example.com",
 				EmailUser:     "",
@@ -27,7 +27,7 @@ func GetServerConfig() *generatedproto.Server {
 				EmailHost:     "",
 			},
 			DiscordAlert: false,
-			Discord: &generatedproto.Discord{
+			Discord: &proto.Discord{
 				DiscordWebHookId:    "",
 				DiscordWebHookToken: "",
 			},
@@ -39,7 +39,7 @@ func GetServerConfig() *generatedproto.Server {
 			log.GetLogger().Fatal("Failed to generate server config: ", generationError.Error())
 		}
 	} else {
-		loadedConfig, loadError := loadConfig[*generatedproto.Server](rawConfig)
+		loadedConfig, loadError := loadConfig[*proto.Server](rawConfig)
 		if loadError != nil {
 			log.GetLogger().Fatal("Failed to load server config: ", loadError.Error())
 		}

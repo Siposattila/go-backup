@@ -4,9 +4,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/Siposattila/go-backup/generatedproto"
 	"github.com/Siposattila/go-backup/io"
 	"github.com/Siposattila/go-backup/log"
+	"github.com/Siposattila/go-backup/proto"
 )
 
 func getBackupConfigName(clientId string) string {
@@ -22,11 +22,11 @@ func getClientName() string {
 	return name
 }
 
-func GetClientConfig() *generatedproto.Client {
-	var config *generatedproto.Client
+func GetClientConfig() *proto.Client {
+	var config *proto.Client
 	rawConfig, readError := io.ReadFile(CONFIG_PATH, CLIENT_CONFIG_FILENAME)
 	if readError != nil {
-		config = &generatedproto.Client{
+		config = &proto.Client{
 			ClientId: getClientName(),
 			Token:    "",
 			Endpoint: "https://localhost:2000",
@@ -37,7 +37,7 @@ func GetClientConfig() *generatedproto.Client {
 			log.GetLogger().Fatal("Failed to generate client config: ", generationError.Error())
 		}
 	} else {
-		loadedConfig, loadError := loadConfig[*generatedproto.Client](rawConfig)
+		loadedConfig, loadError := loadConfig[*proto.Client](rawConfig)
 		if loadError != nil {
 			log.GetLogger().Fatal("Failed to load client config: ", loadError.Error())
 		}
@@ -48,14 +48,15 @@ func GetClientConfig() *generatedproto.Client {
 	return config
 }
 
-func GetBackupConfig(clientId string) *generatedproto.Backup {
-	var config *generatedproto.Backup
+func GetBackupConfig(clientId string) *proto.BackupConfig {
+	var config *proto.BackupConfig
 	rawConfig, readError := io.ReadFile(CONFIG_PATH, getBackupConfigName(clientId))
 	if readError != nil {
-		config = &generatedproto.Backup{
-			WhenToBackup: "0 0 * * *",
-			WhatToBackup: []string{},
-			Exclude:      []string{},
+		config = &proto.BackupConfig{
+			WhenToBackup:     "0 0 * * *",
+			WhatToBackup:     []string{},
+			Exclude:          []string{},
+			IsFullBackupOnly: false,
 		}
 
 		generationError := generateConfig(config, getBackupConfigName(clientId))
@@ -63,7 +64,7 @@ func GetBackupConfig(clientId string) *generatedproto.Backup {
 			log.GetLogger().Fatal("Failed to generate backup config: ", generationError.Error())
 		}
 	} else {
-		loadedConfig, loadError := loadConfig[*generatedproto.Backup](rawConfig)
+		loadedConfig, loadError := loadConfig[*proto.BackupConfig](rawConfig)
 		if loadError != nil {
 			log.GetLogger().Fatal("Failed to get backup config: ", loadError.Error())
 		}
