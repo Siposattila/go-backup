@@ -1,0 +1,19 @@
+{
+    "port": ":2000",
+    "domain": "localhost",
+    "username": "server",
+    "password": "123456",
+    "backupPath": "/go-backup/backup",
+    "storageAlertTresholdInPercent": 90,
+    "registerNodeIfNotKnown": false,
+    "emailAlert": false,
+    "emailReceiver": "",
+    "emailSender": "",
+    "emailUser": "",
+    "emailPassword": "",
+    "emailHost": "",
+    "emailPort": 0,
+    "discordAlert": false,
+    "discordWebHookId": "",
+    "discordWebHookToken": ""
+}

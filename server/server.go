@@ -17,6 +17,7 @@ import (
 	"github.com/Siposattila/go-backup/request"
 	"github.com/quic-go/quic-go"
 	"github.com/quic-go/quic-go/http3"
+	"github.com/quic-go/quic-go/qlog"
 	"github.com/quic-go/webtransport-go"
 )
 
@@ -44,6 +45,7 @@ func NewServer() Server {
 			InitialConnectionReceiveWindow: 20 << 20,  // 20 megabytes
 			MaxStreamReceiveWindow:         60 << 20,  // 60 megabytes
 			MaxConnectionReceiveWindow:     150 << 20, // 150 megabytes
+			Tracer:                         qlog.DefaultTracer,
 		}},
 	}
 	s.getTlsConfig()
@@ -190,14 +192,12 @@ func (s *server) handleStream(stream webtransport.Stream) {
 				s.alertSystem(fmt.Sprintf("Warning the storage alert threshold was met! The current usage is: %d%s", usageAfterBackupTransfer, "%"))
 			}
 		case *proto.Envelope_BackupChunkRequest:
-			writeChunkError := s.writeChunk(message.BackupChunkRequest.Chunk)
+			writeChunkError := s.writeChunk(message.BackupChunkRequest.Chunk, client.ClientId)
 			if writeChunkError != nil {
 				log.GetLogger().Error(
 					fmt.Sprintf("Failed to write chunk %s from %s", message.BackupChunkRequest.Chunk.ChunkName, client.ClientId),
 					writeChunkError.Error(),
 				)
-			} else {
-				log.GetLogger().Success(fmt.Sprintf("Processed chunk %s from %s", message.BackupChunkRequest.Chunk.ChunkName, client.ClientId))
 			}
 
 			response := &proto.Envelope{
@@ -217,9 +217,10 @@ func (s *server) handleStream(stream webtransport.Stream) {
 			renameError := os.Rename(
 				path.Join(
 					s.Config.BackupPath,
+					client.ClientId,
 					fmt.Sprintf(TEMP_FILE, message.BackupEndRequest.Name),
 				),
-				path.Join(s.Config.BackupPath, message.BackupEndRequest.Name),
+				path.Join(s.Config.BackupPath, client.ClientId, message.BackupEndRequest.Name),
 			)
 			if renameError != nil {
 				log.GetLogger().Error(fmt.Sprintf("Failed to finish saving the backup that came from client: %s", client.ClientId), renameError.Error())

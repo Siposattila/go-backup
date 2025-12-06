@@ -1,0 +1,14 @@
+.git
+.gitignore
+.github
+.vscode
+build
+proto
+config.d
+tmp
+.air_client.toml
+.air_server.toml
+.pre-commit-config.yaml
+*.log
+docker
+chunk_temp

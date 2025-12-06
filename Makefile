@@ -1,7 +1,9 @@
 APP_NAME := go-backup
 BUILD_DIR := build
 
-.PHONY: all tidy watch watch_server watch_client build clean proto buffer
+DOCKER_TEST ?= small
+
+.PHONY: all tidy watch watch_server watch_client build clean proto buffer docker_test_build docker_test docker_test_stop
 
 all: build
 
@@ -50,3 +52,18 @@ watch_client: watch
 
 proto:
 	@protoc --go_out=. ./protos/*.proto
+
+docker_test_build: buffer
+	@./docker/data/generate_data.sh
+	@mkdir -p ./docker/qlog
+	@docker compose -f ./docker/build.docker-compose.yaml build
+
+docker_test:
+	@mkdir -p ./docker/backup
+	@docker swarm init
+	@docker stack deploy -c ./docker/test.$(DOCKER_TEST).docker-compose.yaml go-backup-docker-test --detach=false
+
+docker_test_stop:
+	@docker stack rm go-backup-docker-test
+	@docker swarm leave --force
+	@sudo rm -r ./docker/backup
