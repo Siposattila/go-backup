@@ -7,8 +7,10 @@ services:
         endpoint_mode: vip
       environment:
         GO_BACKUP_CLIENT_NAME: client{{.Task.Slot}}
+        QLOGDIR: /go-backup/qlog
       volumes:
         - ./data/medium:/go-backup/data
+        - ./qlog:/go-backup/qlog
       depends_on:
         - go-backup-server-test
       networks:
