@@ -236,6 +236,10 @@ func (s *server) handleStream(stream webtransport.Stream) {
 			if _, err := request.Write(stream, response); err != nil {
 				log.GetLogger().Error(fmt.Sprintf("Failed to write backup end response to %s", client.ClientId), err.Error())
 			}
+
+			if retentionPolicyError := s.applyRetentionPolicy(client.ClientId); retentionPolicyError != nil {
+				log.GetLogger().Error(fmt.Sprintf("Failed to carry out retention policy for %s", client.ClientId), retentionPolicyError.Error())
+			}
 		}
 	}
 
