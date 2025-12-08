@@ -1,0 +1,16 @@
+services:
+    client-builder:
+      build:
+        context: ./..
+        dockerfile: ./docker/go-backup-client.Dockerfile
+        args:
+          BUILD_DIR: build
+      image: apacs/go-backup:client-alpha
+
+    server-builder:
+      build:
+        context: ./..
+        dockerfile: ./docker/go-backup-server.Dockerfile
+        args:
+          BUILD_DIR: build
+      image: apacs/go-backup:server-alpha

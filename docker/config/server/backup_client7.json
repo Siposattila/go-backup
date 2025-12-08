@@ -1,0 +1,6 @@
+{
+    "whenToBackup": "*/7 * * * *",
+    "whatToBackup": ["/go-backup/data"],
+    "exclude": [],
+    "isFullBackupOnly": true
+}

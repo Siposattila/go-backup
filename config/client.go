@@ -14,6 +14,11 @@ func getBackupConfigName(clientId string) string {
 }
 
 func getClientName() string {
+	envName := os.Getenv("GO_BACKUP_CLIENT_NAME")
+	if envName != "" {
+		return envName
+	}
+
 	name, nameError := os.Hostname()
 	if nameError != nil {
 		log.GetLogger().Fatal("Failed to get hostname: ", nameError.Error())
@@ -28,7 +33,7 @@ func GetClientConfig() *proto.Client {
 	if readError != nil {
 		config = &proto.Client{
 			ClientId: getClientName(),
-			Token:    "",
+			Token:    "c2VydmVyOjEyMzQ1Ng==",
 			Endpoint: "https://localhost:2000",
 		}
 

@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	CHUNK_SIZE     = 10 << 10 // 10 kilobytes
+	CHUNK_SIZE     = 5 << 20 // 5 megabytes
 	CHUNK_TEMP_DIR = "./chunk_temp"
 	CHUNK_NAME     = "%s.part%d"
 )

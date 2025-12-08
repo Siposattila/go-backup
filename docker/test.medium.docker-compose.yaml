@@ -1,0 +1,33 @@
+services:
+    go-backup-client-test-medium:
+      image: apacs/go-backup:client-alpha
+      deploy:
+        mode: replicated
+        replicas: 20
+        endpoint_mode: vip
+      environment:
+        GO_BACKUP_CLIENT_NAME: client{{.Task.Slot}}
+        QLOGDIR: /go-backup/qlog
+      volumes:
+        - ./data/medium:/go-backup/data
+        - ./qlog:/go-backup/qlog
+      depends_on:
+        - go-backup-server-test
+      networks:
+        - go-backup-test
+
+    go-backup-server-test:
+      image: apacs/go-backup:server-alpha
+      environment:
+        QLOGDIR: /go-backup/qlog
+      volumes:
+        - ./config/server:/go-backup/config.d
+        - ./backup:/go-backup/backup
+        - ./qlog:/go-backup/qlog
+      networks:
+        - go-backup-test
+
+networks:
+  go-backup-test:
+    external:
+      name: host

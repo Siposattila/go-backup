@@ -10,6 +10,8 @@ import (
 	"github.com/robfig/cron/v3"
 )
 
+const BACKUP_EXTENSION = ".zip"
+
 type BackupInterface interface {
 	Backup(newBackupPath chan<- string)
 	Stop()
@@ -50,7 +52,7 @@ func (b *backup) Backup(newBackupPathChannel chan<- string) {
 			Exclude:        &b.Config.Exclude,
 			ShouldUseStore: !b.Config.IsFullBackupOnly,
 		}
-		zipPath := c.zipCompress(fmt.Sprintf("%s_backup.zip", time.Now().Format("20060102150405")))
+		zipPath := c.zipCompress(fmt.Sprintf("%s_backup%s", time.Now().Format("20060102150405"), BACKUP_EXTENSION))
 
 		log.GetLogger().Success("Backup finished successfully!")
 		if zipPath != "" {

@@ -15,6 +15,7 @@ import (
 	"github.com/Siposattila/go-backup/proto"
 	"github.com/Siposattila/go-backup/request"
 	"github.com/quic-go/quic-go"
+	"github.com/quic-go/quic-go/qlog"
 	"github.com/quic-go/webtransport-go"
 )
 
@@ -39,6 +40,7 @@ func NewClient() Client {
 	c.Dialer = webtransport.Dialer{QUICConfig: &quic.Config{
 		KeepAlivePeriod: time.Duration(25 * time.Second),
 		EnableDatagrams: true,
+		Tracer:          qlog.DefaultTracer,
 	}}
 	c.getTlsConfig()
 
@@ -53,7 +55,7 @@ func (c *client) Start(clientWg *sync.WaitGroup) {
 	h.Add("Authorization", "Basic "+c.Config.Token)
 	res, conn, err := c.Dialer.Dial(context.Background(), c.Config.Endpoint, h)
 	if err != nil {
-		log.GetLogger().Fatal("Unable to connect to server.", err.Error())
+		log.GetLogger().Fatal(fmt.Sprintf("Unable to connect to server. %s", c.Config.Endpoint), err.Error())
 	}
 
 	if res.StatusCode < 200 && res.StatusCode >= 300 {
@@ -104,9 +106,7 @@ func (c *client) handleStream() {
 			log.GetLogger().Success("Got backup config from server!")
 			c.startBackup()
 		case *proto.Envelope_BackupChunkResponse:
-			if message.BackupChunkResponse.IsOk {
-				log.GetLogger().Success(fmt.Sprintf("Server processed %s chunk!", message.BackupChunkResponse.ChunkName))
-			} else {
+			if !message.BackupChunkResponse.IsOk {
 				log.GetLogger().Error(fmt.Sprintf("Server was not able to process %s chunk!", message.BackupChunkResponse.ChunkName))
 			}
 

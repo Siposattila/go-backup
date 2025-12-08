@@ -6,3 +6,8 @@ old_checksum_store.json
 chunk_temp
 build/
 build-errors.log
+docker/data/small
+docker/data/medium
+docker/data/large
+docker/backup
+docker/qlog

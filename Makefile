@@ -1,7 +1,9 @@
 APP_NAME := go-backup
 BUILD_DIR := build
 
-.PHONY: all tidy watch watch_server watch_client build clean proto buffer
+DOCKER_TEST ?= small
+
+.PHONY: all tidy watch watch_server watch_client build clean proto buffer docker_test_build docker_test docker_test_stop
 
 all: build
 
@@ -17,9 +19,9 @@ build:
 	@echo "Building $(APP_NAME)..."
 	@mkdir -p $(BUILD_DIR)
 
-	@# @GOOS=windows GOARCH=amd64 go build -o $(BUILD_DIR)/$(APP_NAME)-windows-amd64.exe .
-	@# @GOOS=darwin GOARCH=amd64 go build -o $(BUILD_DIR)/$(APP_NAME)-darwin-amd64 .
-	@# @GOOS=darwin GOARCH=arm64 go build -o $(BUILD_DIR)/$(APP_NAME)-darwin-arm64 .
+	@GOOS=windows GOARCH=amd64 go build -o $(BUILD_DIR)/$(APP_NAME)-windows-amd64.exe .
+	@GOOS=darwin GOARCH=amd64 go build -o $(BUILD_DIR)/$(APP_NAME)-darwin-amd64 .
+	@GOOS=darwin GOARCH=arm64 go build -o $(BUILD_DIR)/$(APP_NAME)-darwin-arm64 .
 	@GOOS=linux GOARCH=amd64 go build -o $(BUILD_DIR)/$(APP_NAME)-linux-amd64 .
 	@go build -o $(BUILD_DIR)/$(APP_NAME)
 
@@ -50,3 +52,18 @@ watch_client: watch
 
 proto:
 	@protoc --go_out=. ./protos/*.proto
+
+docker_test_build: buffer
+	@./docker/data/generate_data.sh
+	@mkdir -p ./docker/qlog
+	@docker compose -f ./docker/build.docker-compose.yaml build
+
+docker_test:
+	@mkdir -p ./docker/backup
+	@docker swarm init
+	@docker stack deploy -c ./docker/test.$(DOCKER_TEST).docker-compose.yaml go-backup-docker-test --detach=false
+
+docker_test_stop:
+	@docker stack rm go-backup-docker-test
+	@docker swarm leave --force
+	@sudo rm -r ./docker/backup
