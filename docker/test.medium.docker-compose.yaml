@@ -1,6 +1,6 @@
 services:
     go-backup-client-test-medium:
-      image: go-backup:client-alpha
+      image: apacs/go-backup:client-alpha
       deploy:
         mode: replicated
         replicas: 20
@@ -17,7 +17,7 @@ services:
         - go-backup-test
 
     go-backup-server-test:
-      image: go-backup:server-alpha
+      image: apacs/go-backup:server-alpha
       environment:
         QLOGDIR: /go-backup/qlog
       volumes:

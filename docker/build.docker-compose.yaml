@@ -5,7 +5,7 @@ services:
         dockerfile: ./docker/go-backup-client.Dockerfile
         args:
           BUILD_DIR: build
-      image: go-backup:client-alpha
+      image: apacs/go-backup:client-alpha
 
     server-builder:
       build:
@@ -13,4 +13,4 @@ services:
         dockerfile: ./docker/go-backup-server.Dockerfile
         args:
           BUILD_DIR: build
-      image: go-backup:server-alpha
+      image: apacs/go-backup:server-alpha
