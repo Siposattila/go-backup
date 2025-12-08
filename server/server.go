@@ -184,9 +184,13 @@ func (s *server) handleStream(stream webtransport.Stream) {
 		case *proto.Envelope_BackupStartRequest:
 			log.GetLogger().Normal(fmt.Sprintf("%s started sending backup...", client.ClientId))
 
-			diskUsage := disk.NewDiskUsage("/")
-			usageAfterBackupTransfer := int32(diskUsage.Used()+uint64(message.BackupStartRequest.Size)) * 100 / int32(diskUsage.Size())
-			if diskUsage.Usage() >= s.Config.StorageAlertTresholdInPercent || usageAfterBackupTransfer >= s.Config.StorageAlertTresholdInPercent {
+			diskUsage, diskUsageError := disk.NewDiskUsage("/")
+			if diskUsageError != nil {
+				log.GetLogger().Error("Was not able to get disk usage data!!!")
+			}
+
+			usageAfterBackupTransfer := int8(diskUsage.UsedBytes + uint64(message.BackupStartRequest.Size)*100/diskUsage.TotalBytes)
+			if diskUsage.UsagePercent >= int8(s.Config.StorageAlertTresholdInPercent) || usageAfterBackupTransfer >= int8(s.Config.StorageAlertTresholdInPercent) {
 				// TODO: if the threshold was hit then should do something about it
 				log.GetLogger().Warning(fmt.Sprintf("A backup from this client %s will put the storage above the set threshold.", client.ClientId))
 				s.alertSystem(fmt.Sprintf("Warning the storage alert threshold was met! The current usage is: %d%s", usageAfterBackupTransfer, "%"))

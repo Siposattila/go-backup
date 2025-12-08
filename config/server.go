@@ -13,7 +13,7 @@ func GetServerConfig() *proto.Server {
 		config = &proto.Server{
 			Port:                          ":2000",
 			Domain:                        "localhost",
-			Username:                      "backup",
+			Username:                      "server",
 			Password:                      "123456",
 			BackupPath:                    ".",
 			StorageAlertTresholdInPercent: 95,
@@ -21,17 +21,17 @@ func GetServerConfig() *proto.Server {
 			Email: &proto.Email{
 				EmailReceiver: "example@example.com",
 				EmailSender:   "example@example.com",
-				EmailUser:     "",
-				EmailPassword: "",
+				EmailUser:     "example",
+				EmailPassword: "example_password",
 				EmailPort:     25,
-				EmailHost:     "",
+				EmailHost:     "example_host",
 			},
 			DiscordAlert: false,
 			Discord: &proto.Discord{
-				DiscordWebHookId:    "",
-				DiscordWebHookToken: "",
+				DiscordWebHookId:    "example_webhook_id",
+				DiscordWebHookToken: "example_webhook_token",
 			},
-			RegisterNodeIfNotKnown: true,
+			RegisterNodeIfNotKnown: false,
 		}
 
 		generationError := generateConfig(config, SERVER_CONFIG_FILENAME)
